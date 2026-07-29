@@ -305,13 +305,12 @@ function drawScatter() {
   const W = 900, H = 330, L = 60, Rt = 30, T = 18, B = 44;
   const costs = ARMS.map(a => R.models[a.id].agg.cost_mean);
   const xmin = Math.log10(Math.min(...costs) / 1.8), xmax = Math.log10(Math.max(...costs) * 1.8);
-  const vals = ARMS.map(a => R.models[a.id].agg[scatterMetric]);
-  /* dynamic y-range: faithfulness clusters ~71-73, correctness ~86-89 — each metric gets
-     its own scale or the tighter one flattens into an unreadable line */
-  const ymin = Math.floor(Math.min(...vals) / 2) * 2 - 2, ymax = Math.ceil(Math.max(...vals) / 2) * 2 + 2;
+  /* fixed 50-100 for BOTH metrics (matches the Scores bars): a data-fit range magnified
+     ~2-point gaps into chart-filling separation — the models are close, show them close */
+  const ymin = 50, ymax = 100;
   const X = v => L + (Math.log10(v) - xmin) / (xmax - xmin) * (W - L - Rt);
   const Y = v => T + (ymax - v) / (ymax - ymin) * (H - T - B);
-  for (let y = ymin; y <= ymax; y += 2) {
+  for (let y = ymin; y <= ymax; y += 10) {
     S("line", { x1:L, x2:W-Rt, y1:Y(y), y2:Y(y), class:"gridline" }, svg);
     S("text", { x:L-8, y:Y(y)+4, "text-anchor":"end", class:"ticktext" }, svg).textContent = y;
   }
