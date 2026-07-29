@@ -150,7 +150,7 @@
     <h3>Quality against cost, the full regatta on one chart
       <span class="seg"><button id="sc-corr" class="on">correctness</button><button id="sc-faith">faithfulness</button></span>
     </h3>
-    <div class="note" id="scatter-note">Cost per answer (log scale) against judged correctness. All 57 races, identical prompts, third-family judge.</div>
+    <div class="note" id="scatter-note">Cost per answer (linear, from zero) against judged correctness. All 57 races, identical prompts, third-family judge.</div>
     <svg id="scatter" width="100%" height="330" viewBox="0 0 900 330" preserveAspectRatio="xMidYMid meet"></svg>
   </div>
   <div class="chartrow">
@@ -357,22 +357,24 @@ function drawScatter() {
   const svg = document.getElementById("scatter"); svg.innerHTML = "";
   const W = 900, H = 330, L = 60, Rt = 30, T = 18, B = 44;
   const costs = ARMS.map(a => R.models[a.id].agg.cost_mean);
-  const xmin = Math.log10(Math.min(...costs) / 1.8), xmax = Math.log10(Math.max(...costs) * 1.8);
+  /* linear from $0: a log axis (and any non-zero origin) compresses the cost gap —
+     the 9x spread between the cheapest and dearest arm should LOOK like 9x */
+  const xmax = Math.max(...costs) * 1.15;
   /* fixed 50-100 for BOTH metrics (matches the Scores bars): a data-fit range magnified
      ~2-point gaps into chart-filling separation — the models are close, show them close */
   const ymin = 50, ymax = 100;
-  const X = v => L + (Math.log10(v) - xmin) / (xmax - xmin) * (W - L - Rt);
+  const X = v => L + v / xmax * (W - L - Rt);
   const Y = v => T + (ymax - v) / (ymax - ymin) * (H - T - B);
   for (let y = ymin; y <= ymax; y += 10) {
     S("line", { x1:L, x2:W-Rt, y1:Y(y), y2:Y(y), class:"gridline" }, svg);
     S("text", { x:L-8, y:Y(y)+4, "text-anchor":"end", class:"ticktext" }, svg).textContent = y;
   }
-  for (const v of [0.002, 0.005, 0.01, 0.02, 0.05]) {
-    if (Math.log10(v) < xmin || Math.log10(v) > xmax) continue;
+  for (let v = 0; v <= xmax; v += 0.01) {
     S("line", { x1:X(v), x2:X(v), y1:T, y2:H-B, class:"gridline" }, svg);
-    S("text", { x:X(v), y:H-B+16, "text-anchor":"middle", class:"ticktext" }, svg).textContent = "$" + v;
+    S("text", { x:X(v), y:H-B+16, "text-anchor":"middle", class:"ticktext" }, svg).textContent =
+      "$" + v.toFixed(2);
   }
-  S("text", { x:(L+W-Rt)/2, y:H-6, "text-anchor":"middle", class:"ticktext" }, svg).textContent = "cost per answer (log)";
+  S("text", { x:(L+W-Rt)/2, y:H-6, "text-anchor":"middle", class:"ticktext" }, svg).textContent = "cost per answer";
   S("text", { x:14, y:(T+H-B)/2, class:"ticktext", transform:`rotate(-90 14 ${(T+H-B)/2})` }, svg).textContent = scatterMetric === "corr" ? "correctness" : "faithfulness";
   for (const a of ARMS) {
     const m = R.models[a.id];
@@ -493,11 +495,11 @@ function drawScale() {
 }
 document.getElementById("sc-corr").onclick = () => { scatterMetric = "corr";
   document.getElementById("sc-corr").classList.add("on"); document.getElementById("sc-faith").classList.remove("on");
-  document.getElementById("scatter-note").textContent = "Cost per answer (log scale) against judged correctness. All 57 races, identical prompts, third-family judge.";
+  document.getElementById("scatter-note").textContent = "Cost per answer (linear, from zero) against judged correctness. All 57 races, identical prompts, third-family judge.";
   if (R) drawScatter(); };
 document.getElementById("sc-faith").onclick = () => { scatterMetric = "faith";
   document.getElementById("sc-faith").classList.add("on"); document.getElementById("sc-corr").classList.remove("on");
-  document.getElementById("scatter-note").textContent = "Cost per answer (log scale) against judged faithfulness. All 57 races, identical prompts, third-family judge.";
+  document.getElementById("scatter-note").textContent = "Cost per answer (linear, from zero) against judged faithfulness. All 57 races, identical prompts, third-family judge.";
   if (R) drawScatter(); };
 
 /* ---------------- The Shoals (sharp-edges deck) ---------------- */
