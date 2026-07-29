@@ -15,11 +15,10 @@ shared by all arms — "same knowledge, three brains".
                                             an open-source THIRD-family judge: neither
                                             candidate is graded by its own vendor)
 
-Env (copy .env.example to .env — never hardcode keys in code):
+Env (run.sh sets these from Vault — never hardcode):
   DO_KEY         DO GenAI serverless inference key (all-models, 2026-07-29)
   ANTHROPIC_KEY  Anthropic API key — ONLY needed when OPUS_BACKEND=anthropic
-  RAG_URL        optional retrieval endpoint (POST /search {query, top_k} -> {results:[{text}]});
-                 unset = context-free comparison, or use RAG_CACHE for precomputed chunks
+  RAG_URL        rag-api base (default http://127.0.0.1:18001 — the SSH tunnel)
   RAG_KEY        rag-api key
   OPUS_BACKEND   "do" (default — all arms on DigitalOcean) or "anthropic" to route the
                  Opus arm via the Anthropic API (needs ANTHROPIC_KEY)
@@ -42,15 +41,24 @@ from urllib.parse import parse_qs, urlparse
 DO_INFER = "https://inference.do-ai.run/v1"
 ANTH = "https://api.anthropic.com/v1/messages"
 
-# $/Mtok (in, out) — all three VERIFIED 2026-07-29 against the DO API's own model
+# $/Mtok (in, out) — K2.6/Opus VERIFIED 2026-07-29 against the DO API's own model
 # records (GET /v2/gen-ai/models → pricing.{input,output}_price_per_million × 1e6).
+# Per-model "base"/"key" override the default DO endpoint/key when present.
 MODELS = {
     "k3":   {"label": "Kimi K3",       "do_id": "kimi-k3",   "price": (3.0, 15.0),
-             "top_p": 0.95},   # K3 400s on any top_p other than 0.95 IF sent
+             "top_p": 0.95},   # K3 400s on any top_p other than 0.95 IF sent (DO serving)
     "k26":  {"label": "Kimi K2.6",     "do_id": "kimi-k2.6", "price": (0.76, 3.20)},
     "opus": {"label": "Claude Opus 5", "do_id": "anthropic-claude-opus-5",
              "anthropic_id": "claude-opus-5", "price": (5.0, 25.0)},
 }
+
+# 2026-07-29: DO's K3 serving emitted degenerate output on launch day, so the K3 arm can
+# ride Baseten instead — automatically, whenever BASETEN_KEY is set (unset = plain DO).
+# Only K3 moves; the other arms stay on DO. ⚠️ VERIFY the Baseten K3 $/Mtok before quoting
+# costs — the (3.0, 15.0) carried here is DO's list price for the same model.
+if os.environ.get("BASETEN_KEY"):
+    MODELS["k3"].update({"do_id": "moonshotai/Kimi-K3",
+                         "base": "https://inference.baseten.co/v1", "key": "BASETEN_KEY"})
 
 SYSMSG = ("You are Poseidon, a DigitalOcean solutions expert. Answer the question using the "
           "context when it is relevant. Be concise and concrete. If the context does not "
@@ -72,7 +80,7 @@ Score the CANDIDATE on two axes, 0-100 each:
 
 Reply with ONLY a JSON object: {{"correctness": <int>, "faithfulness": <int>, "why": "<12 words>"}}"""
 
-CFG = {k: os.environ.get(k, "") for k in ("DO_KEY", "ANTHROPIC_KEY", "RAG_KEY")}
+CFG = {k: os.environ.get(k, "") for k in ("DO_KEY", "ANTHROPIC_KEY", "RAG_KEY", "BASETEN_KEY")}
 RAG_URL = os.environ.get("RAG_URL", "")   # empty = no live retriever (cache or context-free)
 OPUS_BACKEND = os.environ.get("OPUS_BACKEND", "do")
 DATASET = os.environ.get("DATASET", "evalset.csv")
@@ -132,10 +140,12 @@ def stream_do(w, arm, q, chunks):
                          {"role": "user", "content": q}]}
     if "top_p" in m:
         body["top_p"] = m["top_p"]
-    req = urllib.request.Request(DO_INFER + "/chat/completions",
+    base = m.get("base", DO_INFER)
+    key = CFG.get(m.get("key", "DO_KEY"), "") or CFG["DO_KEY"]
+    req = urllib.request.Request(base + "/chat/completions",
                                  data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json",
-                                          "Authorization": "Bearer " + CFG["DO_KEY"]})
+                                          "Authorization": "Bearer " + key})
     t0, tft, tfa, usage = time.time(), None, None, {}
     n_think = n_ans = 0
     with urllib.request.urlopen(req, timeout=300) as resp:
@@ -332,7 +342,7 @@ if __name__ == "__main__":
         required.append("RAG_KEY")
     missing = [k for k in required if not CFG.get(k)]
     if missing:
-        sys.exit(f"missing env: {missing} — see .env.example")
+        sys.exit(f"missing env: {missing} — see .env.example / run.sh")
     if not (RAG_URL or _rag_cache):
         print("note: no RAG_URL and no RAG_CACHE — running context-free (no retrieval)")
     port = int(os.environ.get("PORT", "8130"))

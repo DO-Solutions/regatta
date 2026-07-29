@@ -11,7 +11,8 @@ KB + the byte-identical system message (SYSMSG — no per-model persona differen
 Judge = an open-source THIRD-family model (deepseek-v4-pro on DO by default): neither
 Kimi nor Claude is graded by its own vendor's model.
 
-Usage:  set -a; . ./.env; set +a; python3 suite_runner.py --out suite_results.json
+Usage:  bash run.sh suite            (sets env from Vault, tunnel must be up)
+   or:  python3 suite_runner.py --arms k3,opus --out suite_results.json
 
 Outputs <out> (full per-question records) and prints the aggregate table +
 cost-at-scale extrapolation for the closing slide.
@@ -28,7 +29,7 @@ import urllib.request
 
 DO_INFER = "https://inference.do-ai.run/v1"
 ANTH = "https://api.anthropic.com/v1/messages"
-CFG = {k: os.environ.get(k, "") for k in ("DO_KEY", "ANTHROPIC_KEY", "RAG_KEY")}
+CFG = {k: os.environ.get(k, "") for k in ("DO_KEY", "ANTHROPIC_KEY", "RAG_KEY", "BASETEN_KEY")}
 OPUS_BACKEND = os.environ.get("OPUS_BACKEND", "do")
 
 from race_server import (MODELS, SYSMSG, judge_one,  # single source of truth
@@ -91,8 +92,10 @@ def ask(arm, q):
                              {"role": "user", "content": q}]}
         if "top_p" in m:
             body["top_p"] = m["top_p"]
-        st, d = _post(DO_INFER + "/chat/completions", body,
-                      {"Authorization": "Bearer " + CFG["DO_KEY"]})
+        base = m.get("base", DO_INFER)
+        key = CFG.get(m.get("key", "DO_KEY"), "") or CFG["DO_KEY"]
+        st, d = _post(base + "/chat/completions", body,
+                      {"Authorization": "Bearer " + key})
         if st != 200:
             return {"ok": False, "status": st, "err": str(d)[:160],
                     "latency_s": round(time.time() - t0, 2)}
