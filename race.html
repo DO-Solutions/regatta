@@ -114,7 +114,7 @@
 <body>
 <header>
   <h1>Poseidon's Regatta</h1>
-  <span class="sub">same question · same knowledge · three models race on DigitalOcean Serverless Inference</span>
+  <span class="sub">same question · same knowledge · three models — one race</span>
 </header>
 <div class="tabs">
   <button id="tab-race" class="on">Live race</button>
@@ -333,7 +333,7 @@ function drawCards() {
     c.insertAdjacentHTML("beforeend", `
       <div class="rcard">
         <div class="mname"><span class="dot" style="background:${COLOR[a.id]}"></span>${m.label}</div>
-        <div class="prov">served by ${m.provider} · $${m.price_in} / $${m.price_out} per Mtok</div>
+        <div class="prov">$${m.price_in} / $${m.price_out} per Mtok</div>
         <div class="big">${m.agg.corr}<small> / 100 correct</small></div>
         <div class="row"><span>faithfulness</span><b>${m.agg.faith}</b></div>
         <div class="row"><span>latency mean · p95</span><b>${m.agg.lat_mean}s · ${m.agg.lat_p95}s</b></div>
@@ -369,7 +369,7 @@ function drawScatter() {
     const dot = S("circle", { cx, cy, r:11, fill:COLOR[a.id], stroke:"#0b1220", "stroke-width":2 }, svg);
     S("text", { x:cx, y:cy-18, "text-anchor":"middle", class:"dotlabel" }, svg).textContent = m.label;
     dot.addEventListener("mousemove", ev => tipShow(
-      `<b>${m.label}</b> <span class="t">(${m.provider})</span><br>` +
+      `<b>${m.label}</b><br>` +
       `correctness <b>${m.agg.corr}</b> · faithfulness <b>${m.agg.faith}</b><br>` +
       `$${m.agg.cost_mean.toFixed(4)}/answer · ${m.agg.lat_mean}s mean`, ev));
     dot.addEventListener("mouseleave", tipHide);
@@ -494,7 +494,7 @@ const SLIDES = [
   { type:"title", head:"The Shoals",
     body:"Sharp edges we hit building Poseidon's Regatta — every number measured, not estimated. Arrow keys or click to sail through." },
 
-  { type:"div", chip:"Section 1 of 4", head:"Reasoning models change the rules" },
+  { type:"div", chip:"Section 1 of 3", head:"Reasoning models change the rules" },
   { chip:"Reasoning models", head:"A tight token budget silently kneecaps reasoning models",
     body:"Reasoning tokens bill from the same <b>max_tokens</b> budget as the answer. At a 1,024 cap, 24 of 57 K3 answers hit the ceiling <b>mid-thought</b> and scored <b>33</b> — the same questions scored 92 uncapped. The non-reasoning arm never noticed. Tell: completion counts exactly equal to your cap.",
     stat:"33→92", cap:"capped vs uncapped correctness" },
@@ -503,70 +503,28 @@ const SLIDES = [
     stat:"4096", cap:"sane completion floor for a reasoning model" },
   { chip:"Reasoning models", head:"Thinking streams in a different field",
     body:"It arrives in <b>delta.reasoning_content</b>, not <b>delta.content</b>. Read only content and the model looks silent — that's how we discovered K2.6 is a reasoning model too, often thinking <b>longer</b> than K3." },
-  { chip:"Reasoning models", head:"Kimi K3 rejects any top_p but 0.95 — only if you send it",
-    body:"Omitting the parameter is fine. The trap: an SDK silently sending a default <b>top_p=1.0</b> fails every call while a hand-rolled request works — it looks exactly like an auth or endpoint problem.",
-    stat:"0.95", cap:"the only top_p K3 accepts, if sent at all" },
-  { chip:"Reasoning models", head:"Streams die during the silent thinking phase",
-    body:"No visible tokens flow while a model reasons, so idle-timeout proxies hang up mid-request. Keep-alives or generous idle timeouts." },
 
-  { type:"div", chip:"Section 2 of 4", head:"LLM-as-judge is its own minefield" },
+  { type:"div", chip:"Section 2 of 3", head:"LLM-as-judge is its own minefield" },
   { chip:"LLM-as-judge", head:"Small judge budgets fail invisibly",
     body:"A 300–700-token judge truncates mid-verdict on long answers → unparseable JSON → “judge failed” that <b>clusters on the longest answers</b>, quietly biasing your sample. Give judges 2,000 tokens and fence-stripping extraction with retries." },
   { chip:"LLM-as-judge", head:"Never let a model grade its own vendor's output",
-    body:"We judge with an open-source <b>third-family</b> model (DeepSeek V4 Pro) so neither Kimi nor Claude self-grades — one less bias to defend in Q&A." },
-  { chip:"LLM-as-judge", head:"An agent's persona lands inside the graded text",
-    body:"A mandatory closing pitch appeared on <b>98%</b> of one agent's answers and cost it <b>~9.5 faithfulness points</b> — more than most model swaps move the needle. A benchmark score is model + knowledge + <b>output habits</b>; never present a persona-carrying agent's score as a model score.",
-    stat:"−9.5", cap:"faithfulness points from a persona habit alone" },
+    body:"We judge with an open-source <b>third-family</b> model (DeepSeek V4 Pro) so no candidate self-grades — one less bias to defend in Q&A." },
   { chip:"LLM-as-judge", head:"Measure the judge's noise floor before reading deltas",
     body:"Re-judging <b>identical text</b> moved scores with a standard deviation of ~10 points per question. Any single-question comparison inside that band is noise.",
     stat:"±10", cap:"per-question judge noise (identical text)" },
-  { chip:"LLM-as-judge", head:"Verify RAG against the raw model, never the agent",
-    body:"An agent with a KB retrieves on <b>every</b> query, including your “baseline” — so the comparison can even go negative. What works: retrieved-chunk count &gt; 0 plus prompt-token inflation vs the bare model.",
-    stat:"3049 vs 152", cap:"prompt tokens with retrieval vs without" },
   { chip:"LLM-as-judge", head:"“Indexing succeeded” says nothing about retrieval quality",
     body:"After any corpus change, run known queries and inspect what comes back. We found a corpus where <b>~24%</b> of retrieved chunks were boilerplate — invisible until we looked." },
-  { chip:"LLM-as-judge", head:"Rate limits are not a quality signal",
-    body:"429s get retried, excluded, and re-run — never scored — and the exclusion count is reported next to the results." },
 
-  { type:"div", chip:"Section 3 of 4", head:"Platform + deployment" },
-  { chip:"Platform", head:"App Platform buffers Server-Sent Events at the ingress",
-    body:"No user-facing knob; <b>X-Accel-Buffering</b> is not honored. Our streaming demo felt dead behind it; the same code on a Droplet behind Caddy with <b>flush_interval -1</b> delivered the first event in <b>0.23s</b>. For latency-critical streaming, front it yourself.",
-    stat:"0.23s", cap:"first stream event, Droplet vs buffered ingress" },
-  { chip:"Platform", head:"Quote your image tags in app specs",
-    body:"A git-sha tag like <b>971864e-20260729</b> is digits + e + digits — YAML parses it as scientific notation and the deploy dies with “cannot unmarshal number.” A one-in-thousands sha lottery we won." },
-  { chip:"Platform", head:"App specs are whole-document, and deploys race",
-    body:"GET → modify → PUT; any env change redeploys; a new deploy <b>cancels one in flight</b>. Serialize your CI." },
-  { chip:"Platform", head:"Distribution image slugs rotate",
-    body:"<b>debian-12-x64</b> no longer exists (Debian 13 only now). Query <b>/v2/images</b> instead of pasting a slug from a tutorial." },
-  { chip:"Platform", head:"#cloud-config user_data can silently no-op",
-    body:"Depending on image, a <b>#!/bin/bash</b> script is the reliable form — the failure mode is a droplet that boots fine and just never ran your setup." },
-  { chip:"Platform", head:"Model access keys are scoped, and the list lies",
-    body:"<b>GET /v1/models</b> shows what a key can see, which is broader than what it can invoke — a scoped key 403s on listed models. Probe with a 1-token completion." },
+  { type:"div", chip:"Section 3 of 3", head:"Platform + deployment" },
+  { chip:"Platform", head:"Ingress proxies can buffer Server-Sent Events",
+    body:"Correct SSE headers aren't always enough, and <b>X-Accel-Buffering</b> may not be honored. Our streaming demo felt dead behind a buffering ingress; the same code behind a proxy with <b>flush_interval -1</b> delivered the first event in <b>0.23s</b>. For latency-critical streaming, control the proxy.",
+    stat:"0.23s", cap:"first stream event with a flushing proxy" },
   { chip:"Platform", head:"Model pricing is machine-readable — stop hardcoding",
     body:"<b>GET /v2/gen-ai/models</b> → pricing, per model. Our hand-entered placeholder was wrong; the API's wasn't." },
-  { chip:"Platform", head:"Models can degenerate under launch-day load",
-    body:"At peak pressure, up to <b>90%</b> of one model's responses came back as thousands of repeated <b>!</b> characters — same questions clean the day before, sibling models fine. A repeated-char detector turns these into excluded-and-rerun platform failures instead of zeros that crater the score.",
-    stat:"~90%", cap:"peak degenerate-output rate on launch day" },
-  { chip:"Platform", head:"Firewall source-IP pins rot",
-    body:"Pinning SSH to an egress IP breaks the day the ISP rotates it. Fine to do — just write down where every pin lives." },
 
-  { type:"div", chip:"Section 4 of 4", head:"The long tail" },
-  { chip:"Long tail", head:"A strict CSP means no inline script or style at all",
-    body:"<b>script-src 'self'</b> forbids inline &lt;script&gt; and &lt;style&gt; — plan for external static assets from the start rather than retrofitting." },
-  { chip:"Long tail", head:"GitHub org SAML SSO fails cryptically",
-    body:"With SSO enforced, a collaborator grant isn't enough — the SSH key must be SSO-<b>authorized</b> for the org, and until it is, pushes fail with a generic “check your access rights” that looks like a missing grant." },
-  { chip:"Long tail", head:"raw.githubusercontent.com caches for ~5 minutes",
-    body:"Verify a fresh push through the API contents endpoint, not the raw CDN, or you'll “confirm” a stale file." },
-  { chip:"Long tail", head:"A knowledge base is welded to its embedder",
-    body:"Our corpus was embedded with a model that only runs on one box, so nothing else could query it live. For a fixed question set, <b>precomputing retrieval</b> is the clean escape — and it makes runs byte-reproducible." },
-  { chip:"Long tail", head:"Self-hosted software ships the SaaS defaults you fled",
-    body:"Our self-hosted health-check service had the same <b>20-check</b> account cap as the hosted version — and its API returns a bare 403 at the limit, indistinguishable from an auth failure." },
-  { chip:"Long tail", head:"Anything with a renewal period eventually won't get renewed",
-    body:"A 30-day credential died quietly because renewal was a human habit, not a timer; its backup had 3 days left. Automate renewal <b>and</b> alert on renewal failure — a dead-man's switch, not just an expiry check." },
-
-  { type:"title", head:"Same model, wherever it's served.",
-    body:"The harness doesn't care who serves which model — which is exactly why the comparison holds. Try DigitalOcean, and talk to Poseidon: koine.network/@poseidon." },
-];
+  { type:"title", head:"The point is cost-effectiveness.",
+    body:"Across 57 graded questions, Kimi K3 held quality parity with a frontier model at roughly <b>half the cost</b> — and Kimi K2.6 came within three points at a <b>ninth</b>. Run the numbers on your own workload: github.com/DO-Solutions/regatta · and say hi to Poseidon: koine.network/@poseidon." },
+]
 
 let slideIx = 0;
 function renderSlide() {

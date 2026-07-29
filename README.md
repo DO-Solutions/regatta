@@ -70,6 +70,8 @@ Three modes, in precedence order:
   (`GET /v2/gen-ai/models` → `pricing`); re-check them before quoting numbers.
 - `OPUS_BACKEND=anthropic` + `ANTHROPIC_KEY` routes the Opus arm through the Anthropic API
   instead of DO — useful if your DO key doesn't include Anthropic models.
+- `K3_BASE` (+ `K3_MODEL_ID`, `K3_KEY`) routes the K3 arm to any OpenAI-compatible endpoint.
+  The comparison is about models, not providers — list price is unchanged either way.
 - Judge budget is 2000 tokens deliberately: small judge budgets truncate on long answers
   and silently produce unparseable verdicts.
 

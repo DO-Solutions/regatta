@@ -53,13 +53,12 @@ MODELS = {
              "anthropic_id": "claude-opus-5", "price": (5.0, 25.0)},
 }
 
-# 2026-07-29: DO's K3 serving emitted degenerate output on launch day, so the K3 arm can
-# ride Baseten instead — automatically, whenever BASETEN_KEY is set (unset = plain DO).
-# Only K3 moves; the other arms stay on DO. Baseten's K3 price equals DO's (3.0/15.0
-# per Mtok — confirmed 2026-07-29), so cost math is provider-independent.
-if os.environ.get("BASETEN_KEY"):
-    MODELS["k3"].update({"do_id": "moonshotai/Kimi-K3",
-                         "base": "https://inference.baseten.co/v1", "key": "BASETEN_KEY"})
+# Optional per-arm serving override: K3_BASE (+ K3_MODEL_ID, K3_KEY) routes the K3 arm to
+# any OpenAI-compatible endpoint. The comparison is about MODELS, not providers — the list
+# price is the same either way, so cost math is serving-independent.
+if os.environ.get("K3_BASE"):
+    MODELS["k3"].update({"do_id": os.environ.get("K3_MODEL_ID", MODELS["k3"]["do_id"]),
+                         "base": os.environ["K3_BASE"].rstrip("/"), "key": "K3_KEY"})
 
 SYSMSG = ("You are Poseidon, a DigitalOcean solutions expert. Answer the question using the "
           "context when it is relevant. Be concise and concrete. If the context does not "
@@ -81,7 +80,7 @@ Score the CANDIDATE on two axes, 0-100 each:
 
 Reply with ONLY a JSON object: {{"correctness": <int>, "faithfulness": <int>, "why": "<12 words>"}}"""
 
-CFG = {k: os.environ.get(k, "") for k in ("DO_KEY", "ANTHROPIC_KEY", "RAG_KEY", "BASETEN_KEY")}
+CFG = {k: os.environ.get(k, "") for k in ("DO_KEY", "ANTHROPIC_KEY", "RAG_KEY", "K3_KEY")}
 RAG_URL = os.environ.get("RAG_URL", "")   # empty = no live retriever (cache or context-free)
 OPUS_BACKEND = os.environ.get("OPUS_BACKEND", "do")
 DATASET = os.environ.get("DATASET", "evalset.csv")
@@ -133,8 +132,8 @@ def stream_do(w, arm, q, chunks):
     """DO serverless: thinking arrives in delta.reasoning_content, answer in delta.content."""
     m = MODELS[arm]
     ctx = "\n\n---\n\n".join(chunks)[:12000]
-    # 2048: reasoning tokens share the completion budget — at 1024 both Kimi arms hit the
-    # cap exactly (K2.6 spent ~3.5k chars thinking), truncating answers mid-sentence on camera
+    # 4096: reasoning tokens share the completion budget — tighter caps truncated
+    # reasoning-model answers mid-sentence on camera (and cratered benchmark scores)
     body = {"model": m["do_id"], "max_tokens": 4096, "stream": True,
             "stream_options": {"include_usage": True},
             "messages": [{"role": "system", "content": SYSMSG + "\n\nCONTEXT:\n" + ctx},

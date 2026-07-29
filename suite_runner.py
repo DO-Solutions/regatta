@@ -29,7 +29,7 @@ import urllib.request
 
 DO_INFER = "https://inference.do-ai.run/v1"
 ANTH = "https://api.anthropic.com/v1/messages"
-CFG = {k: os.environ.get(k, "") for k in ("DO_KEY", "ANTHROPIC_KEY", "RAG_KEY", "BASETEN_KEY")}
+CFG = {k: os.environ.get(k, "") for k in ("DO_KEY", "ANTHROPIC_KEY", "RAG_KEY", "K3_KEY")}
 OPUS_BACKEND = os.environ.get("OPUS_BACKEND", "do")
 
 from race_server import (MODELS, SYSMSG, judge_one,  # single source of truth
