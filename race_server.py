@@ -290,7 +290,8 @@ class H(BaseHTTPRequestHandler):
         if u.path == "/":
             page = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                      "race.html"), "rb").read()
-            self._hdr(200, "text/html; charset=utf-8")
+            # no-store: the page evolves on demo day; a cached stale copy = "nothing loads"
+            self._hdr(200, "text/html; charset=utf-8", {"Cache-Control": "no-store"})
             self.wfile.write(page)
         elif u.path == "/questions":
             rows = [{"qid": i, **r} for i, r in
@@ -304,7 +305,7 @@ class H(BaseHTTPRequestHandler):
                                 os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                              "suite_results_merged.json"))
             if os.path.exists(rf):
-                self._hdr(200, "application/json")
+                self._hdr(200, "application/json", {"Cache-Control": "no-store"})
                 self.wfile.write(open(rf, "rb").read())
             else:
                 self._hdr(404, "application/json")

@@ -91,7 +91,7 @@
 </header>
 <div class="tabs">
   <button id="tab-race" class="on">Live race</button>
-  <button id="tab-results">Suite results</button>
+  <button id="tab-results">Final Standings</button>
 </div>
 
 <div id="race">
@@ -108,8 +108,8 @@
 <div id="results">
   <div class="rgrid" id="rcards"></div>
   <div class="panel">
-    <h3>Quality vs. cost — the whole suite on one chart</h3>
-    <div class="note">x = cost per answer (log scale) · y = judged correctness · full 57-question suite, identical prompts, third-family judge</div>
+    <h3>Quality vs. cost — the full regatta on one chart</h3>
+    <div class="note">x = cost per answer (log scale) · y = judged correctness · all 57 races, identical prompts, third-family judge</div>
     <svg id="scatter" width="100%" height="330" viewBox="0 0 900 330" preserveAspectRatio="xMidYMid meet"></svg>
   </div>
   <div class="chartrow">
@@ -125,10 +125,10 @@
     </div>
   </div>
   <div class="panel">
-    <h3>Every question, every model
+    <h3>Every race, every boat
       <span class="seg"><button id="seg-corr" class="on">correctness</button><button id="seg-faith">faithfulness</button></span>
     </h3>
-    <div class="note">one column per question — hover for the question, click to pin the breakdown</div>
+    <div class="note">one column per race — hover for the question, click to pin the breakdown</div>
     <svg id="strip" width="100%" height="150" viewBox="0 0 900 150" preserveAspectRatio="xMidYMid meet"></svg>
     <div id="qdetail"></div>
   </div>
