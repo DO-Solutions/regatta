@@ -175,7 +175,7 @@
   </div>
   <div class="panel">
     <h3>Cost at scale</h3>
-    <div class="note">Measured mean cost per answer, multiplied by monthly question volume.</div>
+    <div class="note">Measured mean cost per answer, multiplied by monthly question volume. Bar heights are to scale within each group.</div>
     <svg id="scale" width="100%" height="200" viewBox="0 0 900 200" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="method" id="method"></div>
   </div>
@@ -470,29 +470,29 @@ function showQ(i) {
 }
 function drawScale() {
   const svg = document.getElementById("scale"); svg.innerHTML = "";
-  const W = 900, H = 200, L = 60, T = 12, B = 36;
+  const W = 900, H = 200, L = 20, T = 22, B = 36;
   const vols = [1e4, 1e5, 1e6], labels = ["10k q/mo", "100k q/mo", "1M q/mo"];
-  const maxv = Math.max(...ARMS.map(a => R.models[a.id].agg.cost_mean)) * 1e6 * 1.2;
-  const Y = v => T + (Math.log10(maxv) - Math.log10(Math.max(v, 10))) / (Math.log10(maxv) - 1) * (H - T - B);
-  for (const g of [100, 1000, 10000]) {
-    if (g > maxv) continue;
-    S("line", { x1:L, x2:W-10, y1:Y(g), y2:Y(g), class:"gridline" }, svg);
-    S("text", { x:L-6, y:Y(g)+4, "text-anchor":"end", class:"ticktext" }, svg).textContent = "$" + g.toLocaleString();
-  }
+  /* linear, scaled within each volume group: one shared axis across $42..$37k would
+     shrink the first group to invisibility, and a log axis lies about proportions —
+     within a group, bar height is exactly proportional to cost */
+  const maxCost = Math.max(...ARMS.map(a => R.models[a.id].agg.cost_mean));
+  const Y = frac => T + (1 - frac) * (H - T - B);
   const gw = (W - L - 20) / vols.length;
   vols.forEach((vol, gi) => {
     ARMS.forEach((a, i) => {
       const m = R.models[a.id], v = m.agg.cost_mean * vol;
-      const x = L + 14 + gi * gw + i * 46;
-      const bar = S("rect", { x, y:Y(v), width:34, height:Y(10)-Y(v), rx:5, fill:COLOR[a.id] }, svg);
-      S("text", { x:x+17, y:Y(v)-5, "text-anchor":"middle", class:"ticktext" }, svg).textContent =
+      const frac = m.agg.cost_mean / maxCost;
+      const x = L + 34 + gi * gw + i * 62;
+      const bar = S("rect", { x, y:Y(frac), width:44, height:Y(0)-Y(frac), rx:5, fill:COLOR[a.id] }, svg);
+      S("text", { x:x+22, y:Y(frac)-5, "text-anchor":"middle", class:"ticktext" }, svg).textContent =
         "$" + Math.round(v).toLocaleString();
       bar.addEventListener("mousemove", ev => tipShow(`<b>${m.label}</b> at ${labels[gi]}<br><b>$${Math.round(v).toLocaleString()}/mo</b>`, ev));
       bar.addEventListener("mouseleave", tipHide);
     });
-    S("text", { x:L + 14 + gi*gw + 69, y:H-10, "text-anchor":"middle", class:"ticktext" }, svg).textContent = labels[gi];
+    S("text", { x:L + 34 + gi*gw + 115, y:H-10, "text-anchor":"middle", class:"ticktext" }, svg).textContent = labels[gi];
   });
 }
+
 document.getElementById("sc-corr").onclick = () => { scatterMetric = "corr";
   document.getElementById("sc-corr").classList.add("on"); document.getElementById("sc-faith").classList.remove("on");
   document.getElementById("scatter-note").textContent = "Cost per answer (linear, from zero) against judged correctness. All 57 races, identical prompts, third-family judge.";
