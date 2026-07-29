@@ -1,0 +1,5 @@
+.env
+__pycache__/
+*.pyc
+suite_results.json
+chunks.json
