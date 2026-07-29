@@ -1,4 +1,4 @@
-# model-race — Poseidon's Regatta
+# Poseidon's Regatta
 
 **Same question, same knowledge, three models.**
 
