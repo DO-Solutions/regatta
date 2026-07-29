@@ -7,19 +7,24 @@
   :root {
     --bg:#0b1220; --panel:#111a2e; --edge:#22304d; --ink:#e8eefc; --dim:#8fa3c8;
     --think:#7c8db5; --accent:#0069ff; --good:#3fb950; --warn:#d29922;
+    --c-k26:#e3b341; --c-k3:#4c8dff; --c-opus:#b197fc;
   }
   * { box-sizing:border-box; margin:0; }
   body { background:var(--bg); color:var(--ink); font:16px/1.5 "Segoe UI",system-ui,sans-serif; padding:18px 22px; }
-  header { display:flex; align-items:center; gap:16px; margin-bottom:14px; flex-wrap:wrap; }
+  header { display:flex; align-items:center; gap:16px; margin-bottom:10px; flex-wrap:wrap; }
   header h1 { font-size:22px; font-weight:600; }
   header .sub { color:var(--dim); font-size:14px; }
+  .tabs { display:flex; gap:6px; margin:2px 0 14px; }
+  .tabs button { background:var(--panel); color:var(--dim); border:1px solid var(--edge);
+    border-radius:9px 9px 0 0; padding:8px 22px; font-size:14.5px; font-weight:600; cursor:pointer; }
+  .tabs button.on { color:var(--ink); border-bottom-color:var(--accent); background:#152039; }
   #controls { display:flex; gap:10px; flex:1 1 100%; margin-top:6px; }
   select, input[type=text] { flex:1; background:var(--panel); color:var(--ink); border:1px solid var(--edge);
     border-radius:8px; padding:10px 12px; font-size:15px; }
-  button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:10px 22px;
+  button.act { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:10px 22px;
     font-size:15px; font-weight:600; cursor:pointer; }
-  button:disabled { opacity:.45; cursor:default; }
-  button.ghost { background:var(--panel); border:1px solid var(--edge); }
+  button.act:disabled { opacity:.45; cursor:default; }
+  button.ghost { background:var(--panel); color:var(--ink); border:1px solid var(--edge); }
   #cols { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
   .col { background:var(--panel); border:1px solid var(--edge); border-radius:12px; display:flex;
     flex-direction:column; min-height:62vh; max-height:78vh; overflow:hidden; }
@@ -41,21 +46,100 @@
   .col.winner { border-color:var(--good); box-shadow:0 0 0 1px var(--good); }
   .err { color:#f85149; padding:8px 16px; font-size:13px; }
   #ctxnote { color:var(--dim); font-size:13px; margin:8px 2px; }
+  /* ---------- results tab ---------- */
+  #results { display:none; }
+  .rgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:14px; }
+  .rcard { background:var(--panel); border:1px solid var(--edge); border-radius:12px; padding:14px 18px; }
+  .rcard .mname { font-size:17px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .rcard .dot { width:11px; height:11px; border-radius:50%; display:inline-block; }
+  .rcard .prov { color:var(--dim); font-size:12px; margin-bottom:8px; }
+  .rcard .big { font-size:34px; font-weight:700; line-height:1.1; }
+  .rcard .big small { font-size:14px; color:var(--dim); font-weight:400; }
+  .rcard .row { display:flex; justify-content:space-between; font-size:13px; color:var(--dim); margin-top:4px; }
+  .rcard .row b { color:var(--ink); font-weight:600; }
+  .panel { background:var(--panel); border:1px solid var(--edge); border-radius:12px;
+    padding:14px 18px 10px; margin-bottom:14px; }
+  .panel h3 { font-size:15px; margin-bottom:2px; }
+  .panel .note { color:var(--dim); font-size:12.5px; margin-bottom:8px; }
+  .chartrow { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  svg text { font-family:"Segoe UI",system-ui,sans-serif; }
+  .axis { stroke:var(--edge); stroke-width:1; }
+  .gridline { stroke:var(--edge); stroke-width:.5; stroke-dasharray:3 4; }
+  .ticktext { fill:var(--dim); font-size:11px; }
+  .dotlabel { fill:var(--ink); font-size:13px; font-weight:600; }
+  #tip { position:fixed; display:none; background:#1a2540; border:1px solid var(--edge); color:var(--ink);
+    border-radius:8px; padding:8px 11px; font-size:12.5px; pointer-events:none; z-index:10; max-width:340px;
+    box-shadow:0 8px 24px #00000066; }
+  #tip .t { color:var(--dim); }
+  .qcell { cursor:pointer; }
+  .qcell:hover { stroke:var(--ink); stroke-width:1.5; }
+  #qdetail { display:none; border-top:1px dashed var(--edge); margin-top:10px; padding-top:10px; font-size:13.5px; }
+  #qdetail .q { font-weight:600; margin-bottom:6px; }
+  #qdetail table { border-collapse:collapse; width:100%; font-size:13px; }
+  #qdetail td, #qdetail th { padding:4px 10px 4px 0; text-align:left; color:var(--dim); }
+  #qdetail td b { color:var(--ink); }
+  .seg { display:inline-flex; border:1px solid var(--edge); border-radius:8px; overflow:hidden; margin-left:10px; }
+  .seg button { background:none; border:0; color:var(--dim); font-size:12px; padding:4px 12px; cursor:pointer; }
+  .seg button.on { background:#152039; color:var(--ink); }
+  .method { color:var(--dim); font-size:12px; margin-top:4px; }
 </style>
 </head>
 <body>
 <header>
   <h1>Poseidon's Regatta</h1>
   <span class="sub">same question · same knowledge · three models race on DigitalOcean Serverless Inference</span>
+</header>
+<div class="tabs">
+  <button id="tab-race" class="on">Live race</button>
+  <button id="tab-results">Suite results</button>
+</div>
+
+<div id="race">
   <div id="controls">
     <select id="qsel"><option>loading questions…</option></select>
     <input type="text" id="qfree" placeholder="…or type your own question">
-    <button id="go">Ask all three</button>
-    <button id="grade" class="ghost" disabled>Grade the answers</button>
+    <button id="go" class="act">Ask all three</button>
+    <button id="grade" class="act ghost" disabled>Grade the answers</button>
   </div>
-</header>
-<div id="ctxnote"></div>
-<div id="cols"></div>
+  <div id="ctxnote"></div>
+  <div id="cols"></div>
+</div>
+
+<div id="results">
+  <div class="rgrid" id="rcards"></div>
+  <div class="panel">
+    <h3>Quality vs. cost — the whole suite on one chart</h3>
+    <div class="note">x = cost per answer (log scale) · y = judged correctness · full 57-question suite, identical prompts, third-family judge</div>
+    <svg id="scatter" width="100%" height="330" viewBox="0 0 900 330" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+  <div class="chartrow">
+    <div class="panel">
+      <h3>Scores</h3>
+      <div class="note">correctness (solid) and faithfulness (soft) per model</div>
+      <svg id="bars" width="100%" height="260" viewBox="0 0 440 260" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div class="panel">
+      <h3>Latency</h3>
+      <div class="note">mean (dot) to p95 (bar end), seconds per answer</div>
+      <svg id="lat" width="100%" height="260" viewBox="0 0 440 260" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Every question, every model
+      <span class="seg"><button id="seg-corr" class="on">correctness</button><button id="seg-faith">faithfulness</button></span>
+    </h3>
+    <div class="note">one column per question — hover for the question, click to pin the breakdown</div>
+    <svg id="strip" width="100%" height="150" viewBox="0 0 900 150" preserveAspectRatio="xMidYMid meet"></svg>
+    <div id="qdetail"></div>
+  </div>
+  <div class="panel">
+    <h3>Cost at scale</h3>
+    <div class="note">measured mean $/answer × monthly question volume</div>
+    <svg id="scale" width="100%" height="200" viewBox="0 0 900 200" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="method" id="method"></div>
+  </div>
+</div>
+<div id="tip"></div>
 
 <script>
 const ARMS = [
@@ -63,8 +147,10 @@ const ARMS = [
   { id:"k3",   label:"Kimi K3",       price:"$3 / $15 per Mtok" },
   { id:"opus", label:"Claude Opus 5", price:"$5 / $25 per Mtok" },
 ];
+const COLOR = { k26:"#e3b341", k3:"#4c8dff", opus:"#b197fc" };
 let DATASET = [], answers = {}, doneCount = 0, currentQ = null, currentRef = null;
 
+/* ---------------- live race (unchanged behavior) ---------------- */
 const cols = document.getElementById("cols");
 for (const a of ARMS) {
   cols.insertAdjacentHTML("beforeend", `
@@ -77,13 +163,11 @@ for (const a of ARMS) {
       <div class="stats" id="stats-${a.id}"></div>
     </div>`);
 }
-
 fetch("/questions").then(r=>r.json()).then(rows=>{
   DATASET = rows;
-  const sel = document.getElementById("qsel");
-  sel.innerHTML = rows.map(r=>`<option value="${r.qid}">${r.query.replace(/</g,"&lt;")}</option>`).join("");
+  document.getElementById("qsel").innerHTML =
+    rows.map(r=>`<option value="${r.qid}">${r.query.replace(/</g,"&lt;")}</option>`).join("");
 });
-
 function resetPanes() {
   answers = {}; doneCount = 0;
   document.getElementById("grade").disabled = true;
@@ -93,23 +177,18 @@ function resetPanes() {
     document.getElementById(`col-${a.id}`).classList.remove("winner");
   }
 }
-
 function run() {
   resetPanes();
   const free = document.getElementById("qfree").value.trim();
   if (free) { currentQ = free; currentRef = null; }
-  else {
-    const row = DATASET[+document.getElementById("qsel").value];
-    currentQ = row.query; currentRef = row.expected_response;
-  }
+  else { const row = DATASET[+document.getElementById("qsel").value]; if (!row) return;
+         currentQ = row.query; currentRef = row.expected_response; }
   document.getElementById("ctxnote").textContent = "Q: " + currentQ;
   for (const a of ARMS) streamArm(a.id);
 }
-
 function streamArm(arm) {
   const es = new EventSource(`/stream?arm=${arm}&q=${encodeURIComponent(currentQ)}`);
-  const think = document.getElementById(`think-${arm}`);
-  const ans = document.getElementById(`ans-${arm}`);
+  const think = document.getElementById(`think-${arm}`), ans = document.getElementById(`ans-${arm}`);
   answers[arm] = "";
   es.onmessage = ev => {
     const m = JSON.parse(ev.data);
@@ -119,46 +198,236 @@ function streamArm(arm) {
     else if (m.t === "done") {
       const s = m.stats;
       document.getElementById(`stats-${arm}`).innerHTML = `
-        <div><b>${s.ttfa_s}s</b>first answer</div>
-        <div><b>${s.total_s}s</b>total</div>
+        <div><b>${s.ttfa_s}s</b>first answer</div><div><b>${s.total_s}s</b>total</div>
         <div><b>${s.completion_tokens}${s.tokens_estimated?"~":""}</b>out tokens</div>
-        <div><b>${s.tok_per_s}</b>tok/s</div>
-        <div><b>$${s.cost_usd.toFixed(4)}</b>cost</div>`;
+        <div><b>${s.tok_per_s}</b>tok/s</div><div><b>$${s.cost_usd.toFixed(4)}</b>cost</div>`;
       es.close(); armDone();
     }
   };
   es.onerror = () => { es.close(); armDone(); };
 }
-
-function armDone() {
-  if (++doneCount >= ARMS.length)
-    document.getElementById("grade").disabled = !currentRef;
-}
-
+function armDone() { if (++doneCount >= ARMS.length) document.getElementById("grade").disabled = !currentRef; }
 async function grade() {
   const btn = document.getElementById("grade");
   btn.disabled = true; btn.textContent = "grading…";
-  const r = await fetch("/judge", { method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ q: currentQ, ref: currentRef, answers }) });
-  const scores = await r.json();
-  let best = null;
-  for (const a of ARMS) {
-    const sc = scores[a.id] || {};
-    const el = document.getElementById(`score-${a.id}`);
-    el.className = "score on";
-    el.innerHTML = `
-      <div><span class="n">${sc.correctness ?? "–"}</span><span class="lbl">correct</span></div>
-      <div><span class="n">${sc.faithfulness ?? "–"}</span><span class="lbl">faithful</span></div>
-      <div class="why">${(sc.why||"").replace(/</g,"&lt;")}</div>`;
-    const tot = (sc.correctness||0) + (sc.faithfulness||0);
-    if (!best || tot > best.tot) best = { id:a.id, tot };
-  }
-  if (best) document.getElementById(`col-${best.id}`).classList.add("winner");
-  btn.textContent = "Grade the answers";
+  try {
+    const r = await fetch("/judge", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ q: currentQ, ref: currentRef, answers }) });
+    const scores = await r.json();
+    let best = null;
+    for (const a of ARMS) {
+      const sc = scores[a.id] || {};
+      const el = document.getElementById(`score-${a.id}`);
+      el.className = "score on";
+      el.innerHTML = `
+        <div><span class="n">${sc.correctness ?? "–"}</span><span class="lbl">correct</span></div>
+        <div><span class="n">${sc.faithfulness ?? "–"}</span><span class="lbl">faithful</span></div>
+        <div class="why">${(sc.why||"").replace(/</g,"&lt;")}</div>`;
+      const tot = (sc.correctness||0) + (sc.faithfulness||0);
+      if (!best || tot > best.tot) best = { id:a.id, tot };
+    }
+    if (best) document.getElementById(`col-${best.id}`).classList.add("winner");
+  } finally { btn.textContent = "Grade the answers"; btn.disabled = false; }
 }
-
 document.getElementById("go").onclick = run;
 document.getElementById("grade").onclick = grade;
+
+/* ---------------- tabs ---------------- */
+let resultsLoaded = false;
+function showTab(which) {
+  document.getElementById("race").style.display = which === "race" ? "" : "none";
+  document.getElementById("results").style.display = which === "results" ? "" : "none";
+  document.getElementById("tab-race").classList.toggle("on", which === "race");
+  document.getElementById("tab-results").classList.toggle("on", which === "results");
+  if (which === "results" && !resultsLoaded) loadResults();
+}
+document.getElementById("tab-race").onclick = () => showTab("race");
+document.getElementById("tab-results").onclick = () => showTab("results");
+
+/* ---------------- results dashboard (vanilla SVG) ---------------- */
+const tip = document.getElementById("tip");
+function tipShow(html, ev) {
+  tip.innerHTML = html; tip.style.display = "block";
+  const x = Math.min(ev.clientX + 14, window.innerWidth - 360);
+  tip.style.left = x + "px"; tip.style.top = (ev.clientY + 14) + "px";
+}
+function tipHide() { tip.style.display = "none"; }
+const S = (tag, attrs, parent) => {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(el);
+  return el;
+};
+let R = null, stripMetric = "corr";
+
+async function loadResults() {
+  const resp = await fetch("/results");
+  if (!resp.ok) {
+    document.getElementById("rcards").innerHTML =
+      '<div class="rcard" style="grid-column:1/-1">No suite results published yet — run suite_runner.py and place suite_results_merged.json next to the server.</div>';
+    resultsLoaded = true; return;
+  }
+  R = await resp.json();
+  resultsLoaded = true;
+  drawCards(); drawScatter(); drawBars(); drawLatency(); drawStrip(); drawScale();
+  document.getElementById("method").textContent =
+    `Method: ${R.meta.method}. Judge: ${R.meta.judge}. ${R.meta.n_questions} questions, ${R.meta.date}.`;
+}
+function drawCards() {
+  const c = document.getElementById("rcards"); c.innerHTML = "";
+  for (const a of ARMS) {
+    const m = R.models[a.id]; if (!m) continue;
+    c.insertAdjacentHTML("beforeend", `
+      <div class="rcard">
+        <div class="mname"><span class="dot" style="background:${COLOR[a.id]}"></span>${m.label}</div>
+        <div class="prov">served by ${m.provider} · $${m.price_in} / $${m.price_out} per Mtok</div>
+        <div class="big">${m.agg.corr}<small> / 100 correct</small></div>
+        <div class="row"><span>faithfulness</span><b>${m.agg.faith}</b></div>
+        <div class="row"><span>latency mean · p95</span><b>${m.agg.lat_mean}s · ${m.agg.lat_p95}s</b></div>
+        <div class="row"><span>cost per answer</span><b>$${m.agg.cost_mean.toFixed(4)}</b></div>
+      </div>`);
+  }
+}
+function drawScatter() {
+  const svg = document.getElementById("scatter"); svg.innerHTML = "";
+  const W = 900, H = 330, L = 60, Rt = 30, T = 18, B = 44;
+  const costs = ARMS.map(a => R.models[a.id].agg.cost_mean);
+  const xmin = Math.log10(Math.min(...costs) / 1.8), xmax = Math.log10(Math.max(...costs) * 1.8);
+  const ymin = 80, ymax = 94;
+  const X = v => L + (Math.log10(v) - xmin) / (xmax - xmin) * (W - L - Rt);
+  const Y = v => T + (ymax - v) / (ymax - ymin) * (H - T - B);
+  for (let y = ymin; y <= ymax; y += 2) {
+    S("line", { x1:L, x2:W-Rt, y1:Y(y), y2:Y(y), class:"gridline" }, svg);
+    S("text", { x:L-8, y:Y(y)+4, "text-anchor":"end", class:"ticktext" }, svg).textContent = y;
+  }
+  for (const v of [0.002, 0.005, 0.01, 0.02, 0.05]) {
+    if (Math.log10(v) < xmin || Math.log10(v) > xmax) continue;
+    S("line", { x1:X(v), x2:X(v), y1:T, y2:H-B, class:"gridline" }, svg);
+    S("text", { x:X(v), y:H-B+16, "text-anchor":"middle", class:"ticktext" }, svg).textContent = "$" + v;
+  }
+  S("text", { x:(L+W-Rt)/2, y:H-6, "text-anchor":"middle", class:"ticktext" }, svg).textContent = "cost per answer (log)";
+  S("text", { x:14, y:(T+H-B)/2, class:"ticktext", transform:`rotate(-90 14 ${(T+H-B)/2})` }, svg).textContent = "correctness";
+  for (const a of ARMS) {
+    const m = R.models[a.id];
+    const cx = X(m.agg.cost_mean), cy = Y(m.agg.corr);
+    const dot = S("circle", { cx, cy, r:11, fill:COLOR[a.id], stroke:"#0b1220", "stroke-width":2 }, svg);
+    S("text", { x:cx, y:cy-18, "text-anchor":"middle", class:"dotlabel" }, svg).textContent = m.label;
+    dot.addEventListener("mousemove", ev => tipShow(
+      `<b>${m.label}</b> <span class="t">(${m.provider})</span><br>` +
+      `correctness <b>${m.agg.corr}</b> · faithfulness <b>${m.agg.faith}</b><br>` +
+      `$${m.agg.cost_mean.toFixed(4)}/answer · ${m.agg.lat_mean}s mean`, ev));
+    dot.addEventListener("mouseleave", tipHide);
+  }
+}
+function drawBars() {
+  const svg = document.getElementById("bars"); svg.innerHTML = "";
+  const W = 440, H = 260, L = 40, T = 14, B = 34;
+  const Y = v => T + (100 - v) / (100 - 50) * (H - T - B);
+  for (let y = 50; y <= 100; y += 10) {
+    S("line", { x1:L, x2:W-10, y1:Y(y), y2:Y(y), class:"gridline" }, svg);
+    S("text", { x:L-6, y:Y(y)+4, "text-anchor":"end", class:"ticktext" }, svg).textContent = y;
+  }
+  const gw = (W - L - 20) / ARMS.length;
+  ARMS.forEach((a, i) => {
+    const m = R.models[a.id], x0 = L + 10 + i * gw, bw = 34;
+    const b1 = S("rect", { x:x0+gw/2-bw-4, y:Y(m.agg.corr), width:bw, height:Y(50)-Y(m.agg.corr), rx:5, fill:COLOR[a.id] }, svg);
+    const b2 = S("rect", { x:x0+gw/2+4, y:Y(m.agg.faith), width:bw, height:Y(50)-Y(m.agg.faith), rx:5, fill:COLOR[a.id], opacity:.45 }, svg);
+    S("text", { x:x0+gw/2-bw/2-4, y:Y(m.agg.corr)-6, "text-anchor":"middle", class:"dotlabel" }, svg).textContent = m.agg.corr;
+    S("text", { x:x0+gw/2+4+bw/2, y:Y(m.agg.faith)-6, "text-anchor":"middle", class:"ticktext" }, svg).textContent = m.agg.faith;
+    S("text", { x:x0+gw/2, y:H-12, "text-anchor":"middle", class:"ticktext" }, svg).textContent = m.label;
+    for (const [el, lbl, v] of [[b1,"correctness",m.agg.corr],[b2,"faithfulness",m.agg.faith]]) {
+      el.addEventListener("mousemove", ev => tipShow(`<b>${m.label}</b><br>${lbl} <b>${v}</b>`, ev));
+      el.addEventListener("mouseleave", tipHide);
+    }
+  });
+}
+function drawLatency() {
+  const svg = document.getElementById("lat"); svg.innerHTML = "";
+  const W = 440, H = 260, L = 40, T = 14, B = 34;
+  const maxv = Math.max(...ARMS.map(a => R.models[a.id].agg.lat_p95)) * 1.15;
+  const Y = v => T + (maxv - v) / maxv * (H - T - B);
+  for (let y = 0; y <= maxv; y += 10) {
+    S("line", { x1:L, x2:W-10, y1:Y(y), y2:Y(y), class:"gridline" }, svg);
+    S("text", { x:L-6, y:Y(y)+4, "text-anchor":"end", class:"ticktext" }, svg).textContent = y + "s";
+  }
+  const gw = (W - L - 20) / ARMS.length;
+  ARMS.forEach((a, i) => {
+    const m = R.models[a.id], cx = L + 10 + i * gw + gw / 2;
+    const bar = S("rect", { x:cx-9, y:Y(m.agg.lat_p95), width:18, height:Y(0)-Y(m.agg.lat_p95), rx:5, fill:COLOR[a.id], opacity:.3 }, svg);
+    S("circle", { cx, cy:Y(m.agg.lat_mean), r:8, fill:COLOR[a.id], stroke:"#0b1220", "stroke-width":2 }, svg);
+    S("text", { x:cx, y:H-12, "text-anchor":"middle", class:"ticktext" }, svg).textContent = m.label;
+    bar.addEventListener("mousemove", ev => tipShow(`<b>${m.label}</b><br>mean <b>${m.agg.lat_mean}s</b> · p95 <b>${m.agg.lat_p95}s</b>`, ev));
+    bar.addEventListener("mouseleave", tipHide);
+  });
+}
+function scoreColor(v) {
+  if (v == null) return "#333c52";
+  const t = Math.max(0, Math.min(1, v / 100));
+  const stops = [[248,81,73],[227,179,65],[63,185,80]];
+  const seg = t < .5 ? 0 : 1, u = t < .5 ? t * 2 : (t - .5) * 2;
+  const c = stops[seg].map((s, i) => Math.round(s + (stops[seg+1][i] - s) * u));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+function drawStrip() {
+  const svg = document.getElementById("strip"); svg.innerHTML = "";
+  const W = 900, H = 150, L = 92, T = 8;
+  const n = R.meta.n_questions;
+  const cw = (W - L - 10) / n, rh = 34;
+  ARMS.forEach((a, r) => {
+    S("text", { x:L-8, y:T + r*rh + rh/2 + 4, "text-anchor":"end", class:"ticktext" }, svg).textContent = R.models[a.id].label;
+    R.models[a.id].questions.forEach((q, i) => {
+      const cell = S("rect", { x:L + i*cw + .5, y:T + r*rh + 3, width:Math.max(1, cw-1.5), height:rh-6,
+        rx:2, fill:scoreColor(q[stripMetric]), class:"qcell" }, svg);
+      cell.addEventListener("mousemove", ev => tipShow(
+        `<span class="t">Q${i+1}:</span> ${q.q.replace(/</g,"&lt;")}<br><b>${R.models[a.id].label}</b>: ` +
+        `${stripMetric === "corr" ? "correctness" : "faithfulness"} <b>${q[stripMetric] ?? "–"}</b>`, ev));
+      cell.addEventListener("mouseleave", tipHide);
+      cell.addEventListener("click", () => showQ(i));
+    });
+  });
+}
+function showQ(i) {
+  const d = document.getElementById("qdetail");
+  const q = R.models.k3.questions[i];
+  let rows = "";
+  for (const a of ARMS) {
+    const r = R.models[a.id].questions[i];
+    rows += `<tr><td><b style="color:${COLOR[a.id]}">${R.models[a.id].label}</b></td>
+      <td>correct <b>${r.corr ?? "–"}</b></td><td>faithful <b>${r.faith ?? "–"}</b></td>
+      <td><b>${r.lat}s</b></td><td><b>$${(r.cost||0).toFixed(4)}</b></td><td>${r.ctok} out tok</td></tr>`;
+  }
+  d.innerHTML = `<div class="q">Q${i+1}: ${q.q.replace(/</g,"&lt;")}</div><table>${rows}</table>`;
+  d.style.display = "block";
+}
+function drawScale() {
+  const svg = document.getElementById("scale"); svg.innerHTML = "";
+  const W = 900, H = 200, L = 60, T = 12, B = 36;
+  const vols = [1e4, 1e5, 1e6], labels = ["10k q/mo", "100k q/mo", "1M q/mo"];
+  const maxv = Math.max(...ARMS.map(a => R.models[a.id].agg.cost_mean)) * 1e6 * 1.2;
+  const Y = v => T + (Math.log10(maxv) - Math.log10(Math.max(v, 10))) / (Math.log10(maxv) - 1) * (H - T - B);
+  for (const g of [100, 1000, 10000]) {
+    if (g > maxv) continue;
+    S("line", { x1:L, x2:W-10, y1:Y(g), y2:Y(g), class:"gridline" }, svg);
+    S("text", { x:L-6, y:Y(g)+4, "text-anchor":"end", class:"ticktext" }, svg).textContent = "$" + g.toLocaleString();
+  }
+  const gw = (W - L - 20) / vols.length;
+  vols.forEach((vol, gi) => {
+    ARMS.forEach((a, i) => {
+      const m = R.models[a.id], v = m.agg.cost_mean * vol;
+      const x = L + 14 + gi * gw + i * 46;
+      const bar = S("rect", { x, y:Y(v), width:34, height:Y(10)-Y(v), rx:5, fill:COLOR[a.id] }, svg);
+      S("text", { x:x+17, y:Y(v)-5, "text-anchor":"middle", class:"ticktext" }, svg).textContent =
+        "$" + Math.round(v).toLocaleString();
+      bar.addEventListener("mousemove", ev => tipShow(`<b>${m.label}</b> at ${labels[gi]}<br><b>$${Math.round(v).toLocaleString()}/mo</b>`, ev));
+      bar.addEventListener("mouseleave", tipHide);
+    });
+    S("text", { x:L + 14 + gi*gw + 69, y:H-10, "text-anchor":"middle", class:"ticktext" }, svg).textContent = labels[gi];
+  });
+}
+document.getElementById("seg-corr").onclick = () => { stripMetric = "corr";
+  document.getElementById("seg-corr").classList.add("on"); document.getElementById("seg-faith").classList.remove("on"); drawStrip(); };
+document.getElementById("seg-faith").onclick = () => { stripMetric = "faith";
+  document.getElementById("seg-faith").classList.add("on"); document.getElementById("seg-corr").classList.remove("on"); drawStrip(); };
 </script>
 </body>
 </html>

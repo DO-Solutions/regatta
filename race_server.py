@@ -15,14 +15,15 @@ shared by all arms — "same knowledge, three brains".
                                             an open-source THIRD-family judge: neither
                                             candidate is graded by its own vendor)
 
-Env (run.sh sets these from Vault — never hardcode):
+Env (copy .env.example to .env — never hardcode keys in code):
   DO_KEY         DO GenAI serverless inference key (all-models, 2026-07-29)
   ANTHROPIC_KEY  Anthropic API key — ONLY needed when OPUS_BACKEND=anthropic
-  RAG_URL        rag-api base (default http://127.0.0.1:18001 — the SSH tunnel)
+  RAG_URL        optional retrieval endpoint (POST /search {query, top_k} -> {results:[{text}]});
+                 unset = context-free comparison, or use RAG_CACHE for precomputed chunks
   RAG_KEY        rag-api key
   OPUS_BACKEND   "do" (default — all arms on DigitalOcean) or "anthropic" to route the
                  Opus arm via the Anthropic API (needs ANTHROPIC_KEY)
-  DATASET        eval CSV (default /tmp/evalset.csv)
+  DATASET        eval CSV (default evalset.csv)
   PORT           default 8130
 
 Python stdlib only — no dependencies.
@@ -54,8 +55,8 @@ MODELS = {
 
 # 2026-07-29: DO's K3 serving emitted degenerate output on launch day, so the K3 arm can
 # ride Baseten instead — automatically, whenever BASETEN_KEY is set (unset = plain DO).
-# Only K3 moves; the other arms stay on DO. ⚠️ VERIFY the Baseten K3 $/Mtok before quoting
-# costs — the (3.0, 15.0) carried here is DO's list price for the same model.
+# Only K3 moves; the other arms stay on DO. Baseten's K3 price equals DO's (3.0/15.0
+# per Mtok — confirmed 2026-07-29), so cost math is provider-independent.
 if os.environ.get("BASETEN_KEY"):
     MODELS["k3"].update({"do_id": "moonshotai/Kimi-K3",
                          "base": "https://inference.baseten.co/v1", "key": "BASETEN_KEY"})
@@ -296,6 +297,18 @@ class H(BaseHTTPRequestHandler):
                     enumerate(csv.DictReader(open(DATASET)))]
             self._hdr(200, "application/json")
             self.wfile.write(json.dumps(rows).encode())
+        elif u.path == "/results":
+            # Aggregate suite results for the Results tab (RESULTS_FILE env overrides;
+            # 404 = tab shows its "no results yet" note)
+            rf = os.environ.get("RESULTS_FILE",
+                                os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                             "suite_results_merged.json"))
+            if os.path.exists(rf):
+                self._hdr(200, "application/json")
+                self.wfile.write(open(rf, "rb").read())
+            else:
+                self._hdr(404, "application/json")
+                self.wfile.write(b'{"error": "no suite results published"}')
         elif u.path == "/stream":
             qs = parse_qs(u.query)
             arm = (qs.get("arm") or [""])[0]
@@ -342,7 +355,7 @@ if __name__ == "__main__":
         required.append("RAG_KEY")
     missing = [k for k in required if not CFG.get(k)]
     if missing:
-        sys.exit(f"missing env: {missing} — see .env.example / run.sh")
+        sys.exit(f"missing env: {missing} — see .env.example")
     if not (RAG_URL or _rag_cache):
         print("note: no RAG_URL and no RAG_CACHE — running context-free (no retrieval)")
     port = int(os.environ.get("PORT", "8130"))
