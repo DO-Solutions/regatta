@@ -57,6 +57,16 @@ def _post(url, body, headers, timeout=300, tries=6):
     return -1, {"_err": "retries exhausted"}
 
 
+def degenerate(text):
+    """Serving-fault detector: a response that is mostly one repeated character (observed
+    live 2026-07-29: K3 under launch-day load returning 4096 tokens of '!'). Platform
+    failure, not model quality — treated like a 429: excluded and re-run."""
+    t = (text or "").strip()
+    if len(t) < 20:
+        return False
+    return max(t.count(c) for c in set(t[:200])) / len(t) > 0.5
+
+
 def ask(arm, q):
     m = MODELS[arm]
     ctx = "\n\n---\n\n".join(retrieve(q))[:12000]
@@ -89,6 +99,9 @@ def ask(arm, q):
         u = d.get("usage") or {}
         pt, ct = u.get("prompt_tokens") or 0, u.get("completion_tokens") or 0
         text = ((d.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+    if degenerate(text):
+        return {"ok": False, "status": "degenerate", "err": "degenerate output (repeated-char spam)",
+                "latency_s": round(time.time() - t0, 2)}
     pin, pout = m["price"]
     return {"ok": True, "latency_s": round(time.time() - t0, 2), "text": text,
             "prompt_tokens": pt, "completion_tokens": ct,
