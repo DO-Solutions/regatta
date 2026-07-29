@@ -10,8 +10,8 @@ Every arm gets the identical prompt: shared top-5 retrieval plus the byte-identi
 system message (SYSMSG), so no per-model persona differences leak into the scores. The
 judge is an open-source third-family model, so no candidate grades itself.
 
-Usage:  bash run.sh suite            (sets env from Vault, tunnel must be up)
-   or:  python3 suite_runner.py --arms k3,opus --out suite_results.json
+Usage:  set -a; . ./.env; set +a
+        python3 suite_runner.py --out suite_results.json
 
 Outputs <out> (full per-question records) and prints the aggregate table +
 cost-at-scale extrapolation for the closing slide.
