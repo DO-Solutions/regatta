@@ -1,4 +1,6 @@
-# model-race — same question, same knowledge, three models
+# model-race — Poseidon's Regatta
+
+**Same question, same knowledge, three models.**
 
 A dependency-free demo + eval harness that races **Kimi K2.6, Kimi K3, and Claude Opus 5**
 on [DigitalOcean Serverless Inference](https://docs.digitalocean.com/products/genai-platform/)
