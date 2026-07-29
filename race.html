@@ -103,15 +103,16 @@
   .slide.divider { justify-content:center; text-align:center; }
   .slide.divider h2.head { font-size:44px; }
   .slide.divider .body { margin:0 auto; }
-  .slide.finale { flex-direction:column; justify-content:center; gap:22px; text-align:center; }
-  .slide.finale h2.head { font-size:40px; margin-bottom:2px; }
+  .slide.finale { flex-direction:column; justify-content:center; gap:14px; text-align:center; padding:24px 40px; overflow-y:auto; }
+  .slide.finale h2.head { font-size:34px; margin-bottom:0; }
   .slide.finale .body { font-size:18px; margin:0 auto; }
-  .qrrow { display:flex; gap:56px; justify-content:center; align-items:flex-start; margin-top:4px; }
+  .qrrow { display:flex; gap:64px; justify-content:center; align-items:flex-start; margin-top:2px; }
   .qrbox { display:flex; flex-direction:column; align-items:center; gap:8px; }
-  .qrbox svg { width:132px; height:132px; background:transparent; }
-  .qrbox .qlabel { font-size:15px; font-weight:600; color:var(--ink); }
-  .qrbox .qurl { font-size:12px; color:var(--dim); font-family:ui-monospace,monospace; }
-  .qrbox.wide svg { width:118px; height:118px; }
+  /* 4x the original 132px, capped by viewport so the slide still fits on smaller screens */
+  .qrbox svg { width:min(528px, 30vh, 24vw); height:auto; aspect-ratio:1/1; background:transparent; }
+  .qrbox .qlabel { font-size:17px; font-weight:600; color:var(--ink); }
+  .qrbox .qurl { font-size:13px; color:var(--dim); font-family:ui-monospace,monospace; }
+  .qrbox.wide svg { width:min(472px, 26vh, 22vw); }
   .decknav { display:flex; align-items:center; gap:14px; border-top:1px solid var(--edge);
     padding:10px 18px; color:var(--dim); font-size:13px; }
   .decknav button { background:var(--panel); color:var(--ink); border:1px solid var(--edge);
