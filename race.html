@@ -91,7 +91,7 @@
 </header>
 <div class="tabs">
   <button id="tab-race" class="on">Live race</button>
-  <button id="tab-results">Final Standings</button>
+  <button id="tab-results">The Podium</button>
 </div>
 
 <div id="race">
@@ -235,8 +235,10 @@ document.getElementById("grade").onclick = grade;
 /* ---------------- tabs ---------------- */
 let resultsLoaded = false;
 function showTab(which) {
-  document.getElementById("race").style.display = which === "race" ? "" : "none";
-  document.getElementById("results").style.display = which === "results" ? "" : "none";
+  /* explicit "block", NOT "" — the stylesheet ships #results{display:none}, and an empty
+     inline style falls back to it, leaving the tab permanently invisible (shipped bug) */
+  document.getElementById("race").style.display = which === "race" ? "block" : "none";
+  document.getElementById("results").style.display = which === "results" ? "block" : "none";
   document.getElementById("tab-race").classList.toggle("on", which === "race");
   document.getElementById("tab-results").classList.toggle("on", which === "results");
   if (which === "results" && !resultsLoaded) loadResults();
