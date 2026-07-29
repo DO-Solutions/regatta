@@ -86,6 +86,29 @@
   .seg button { background:none; border:0; color:var(--dim); font-size:12px; padding:4px 12px; cursor:pointer; }
   .seg button.on { background:#152039; color:var(--ink); }
   .method { color:var(--dim); font-size:12px; margin-top:4px; }
+  /* ---------- shoals (slide deck) ---------- */
+  #shoals { display:none; }
+  .deck { background:var(--panel); border:1px solid var(--edge); border-radius:12px;
+    min-height:64vh; display:flex; flex-direction:column; user-select:none; }
+  .slide { flex:1; display:flex; align-items:center; gap:40px; padding:40px 56px; cursor:pointer; }
+  .slide .txt { flex:1.6; }
+  .slide .chip { display:inline-block; font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--dim); border:1px solid var(--edge); border-radius:99px; padding:4px 14px; margin-bottom:18px; }
+  .slide h2.head { font-size:34px; line-height:1.2; margin-bottom:18px; padding:0; }
+  .slide .body { font-size:19px; color:var(--dim); line-height:1.55; max-width:34em; }
+  .slide .body b { color:var(--ink); }
+  .slide .stat { flex:1; text-align:center; }
+  .slide .stat .n { font-size:76px; font-weight:700; color:var(--accent); line-height:1; word-break:break-word; }
+  .slide .stat .cap { color:var(--dim); font-size:14px; margin-top:10px; }
+  .slide.divider { justify-content:center; text-align:center; }
+  .slide.divider h2.head { font-size:44px; }
+  .slide.divider .body { margin:0 auto; }
+  .decknav { display:flex; align-items:center; gap:14px; border-top:1px solid var(--edge);
+    padding:10px 18px; color:var(--dim); font-size:13px; }
+  .decknav button { background:var(--panel); color:var(--ink); border:1px solid var(--edge);
+    border-radius:8px; padding:6px 16px; cursor:pointer; font-size:13px; }
+  .decknav .bar { flex:1; height:4px; background:var(--edge); border-radius:2px; overflow:hidden; }
+  .decknav .bar i { display:block; height:100%; background:var(--accent); transition:width .2s; }
 </style>
 </head>
 <body>
@@ -96,6 +119,7 @@
 <div class="tabs">
   <button id="tab-race" class="on">Live race</button>
   <button id="tab-results">The Podium</button>
+  <button id="tab-shoals">The Shoals</button>
 </div>
 
 <div id="race">
@@ -143,6 +167,18 @@
     <div class="note">measured mean $/answer × monthly question volume</div>
     <svg id="scale" width="100%" height="200" viewBox="0 0 900 200" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="method" id="method"></div>
+  </div>
+</div>
+
+<div id="shoals">
+  <div class="deck">
+    <div class="slide" id="slide"></div>
+    <div class="decknav">
+      <button id="dk-prev">←</button><button id="dk-next">→</button>
+      <div class="bar"><i id="dk-bar"></i></div>
+      <span id="dk-count"></span>
+      <span>arrow keys or click to advance</span>
+    </div>
   </div>
 </div>
 <div id="tip"></div>
@@ -243,17 +279,23 @@ document.getElementById("grade").onclick = grade;
 
 /* ---------------- tabs ---------------- */
 let resultsLoaded = false;
+let curTab = "race";
 function showTab(which) {
-  /* explicit "block", NOT "" — the stylesheet ships #results{display:none}, and an empty
-     inline style falls back to it, leaving the tab permanently invisible (shipped bug) */
-  document.getElementById("race").style.display = which === "race" ? "block" : "none";
-  document.getElementById("results").style.display = which === "results" ? "block" : "none";
+  /* explicit "block", NOT "" — the stylesheet ships display:none for the hidden sections,
+     and an empty inline style falls back to it (shipped bug, once) */
+  curTab = which;
+  for (const t of ["race", "results", "shoals"])
+    document.getElementById(t === "race" ? "race" : t === "results" ? "results" : "shoals")
+      .style.display = which === t ? "block" : "none";
   document.getElementById("tab-race").classList.toggle("on", which === "race");
   document.getElementById("tab-results").classList.toggle("on", which === "results");
+  document.getElementById("tab-shoals").classList.toggle("on", which === "shoals");
   if (which === "results" && !resultsLoaded) loadResults();
+  if (which === "shoals") renderSlide();
 }
 document.getElementById("tab-race").onclick = () => showTab("race");
 document.getElementById("tab-results").onclick = () => showTab("results");
+document.getElementById("tab-shoals").onclick = () => showTab("shoals");
 
 /* ---------------- results dashboard (vanilla SVG) ---------------- */
 const tip = document.getElementById("tip");
@@ -446,6 +488,111 @@ document.getElementById("sc-faith").onclick = () => { scatterMetric = "faith";
   document.getElementById("sc-faith").classList.add("on"); document.getElementById("sc-corr").classList.remove("on");
   document.getElementById("scatter-note").textContent = "x = cost per answer (log scale) · y = judged faithfulness · all 57 races, identical prompts, third-family judge";
   if (R) drawScatter(); };
+
+/* ---------------- The Shoals (sharp-edges deck) ---------------- */
+const SLIDES = [
+  { type:"title", head:"The Shoals",
+    body:"Sharp edges we hit building Poseidon's Regatta — every number measured, not estimated. Arrow keys or click to sail through." },
+
+  { type:"div", chip:"Section 1 of 4", head:"Reasoning models change the rules" },
+  { chip:"Reasoning models", head:"A tight token budget silently kneecaps reasoning models",
+    body:"Reasoning tokens bill from the same <b>max_tokens</b> budget as the answer. At a 1,024 cap, 24 of 57 K3 answers hit the ceiling <b>mid-thought</b> and scored <b>33</b> — the same questions scored 92 uncapped. The non-reasoning arm never noticed. Tell: completion counts exactly equal to your cap.",
+    stat:"33→92", cap:"capped vs uncapped correctness" },
+  { chip:"Reasoning models", head:"An “empty” reply with finish_reason: length isn't a failure",
+    body:"The whole budget went to thinking before any visible token. Raise <b>max_tokens</b> (4,096 is a sane floor); retrying harder does nothing.",
+    stat:"4096", cap:"sane completion floor for a reasoning model" },
+  { chip:"Reasoning models", head:"Thinking streams in a different field",
+    body:"It arrives in <b>delta.reasoning_content</b>, not <b>delta.content</b>. Read only content and the model looks silent — that's how we discovered K2.6 is a reasoning model too, often thinking <b>longer</b> than K3." },
+  { chip:"Reasoning models", head:"Kimi K3 rejects any top_p but 0.95 — only if you send it",
+    body:"Omitting the parameter is fine. The trap: an SDK silently sending a default <b>top_p=1.0</b> fails every call while a hand-rolled request works — it looks exactly like an auth or endpoint problem.",
+    stat:"0.95", cap:"the only top_p K3 accepts, if sent at all" },
+  { chip:"Reasoning models", head:"Streams die during the silent thinking phase",
+    body:"No visible tokens flow while a model reasons, so idle-timeout proxies hang up mid-request. Keep-alives or generous idle timeouts." },
+
+  { type:"div", chip:"Section 2 of 4", head:"LLM-as-judge is its own minefield" },
+  { chip:"LLM-as-judge", head:"Small judge budgets fail invisibly",
+    body:"A 300–700-token judge truncates mid-verdict on long answers → unparseable JSON → “judge failed” that <b>clusters on the longest answers</b>, quietly biasing your sample. Give judges 2,000 tokens and fence-stripping extraction with retries." },
+  { chip:"LLM-as-judge", head:"Never let a model grade its own vendor's output",
+    body:"We judge with an open-source <b>third-family</b> model (DeepSeek V4 Pro) so neither Kimi nor Claude self-grades — one less bias to defend in Q&A." },
+  { chip:"LLM-as-judge", head:"An agent's persona lands inside the graded text",
+    body:"A mandatory closing pitch appeared on <b>98%</b> of one agent's answers and cost it <b>~9.5 faithfulness points</b> — more than most model swaps move the needle. A benchmark score is model + knowledge + <b>output habits</b>; never present a persona-carrying agent's score as a model score.",
+    stat:"−9.5", cap:"faithfulness points from a persona habit alone" },
+  { chip:"LLM-as-judge", head:"Measure the judge's noise floor before reading deltas",
+    body:"Re-judging <b>identical text</b> moved scores with a standard deviation of ~10 points per question. Any single-question comparison inside that band is noise.",
+    stat:"±10", cap:"per-question judge noise (identical text)" },
+  { chip:"LLM-as-judge", head:"Verify RAG against the raw model, never the agent",
+    body:"An agent with a KB retrieves on <b>every</b> query, including your “baseline” — so the comparison can even go negative. What works: retrieved-chunk count &gt; 0 plus prompt-token inflation vs the bare model.",
+    stat:"3049 vs 152", cap:"prompt tokens with retrieval vs without" },
+  { chip:"LLM-as-judge", head:"“Indexing succeeded” says nothing about retrieval quality",
+    body:"After any corpus change, run known queries and inspect what comes back. We found a corpus where <b>~24%</b> of retrieved chunks were boilerplate — invisible until we looked." },
+  { chip:"LLM-as-judge", head:"Rate limits are not a quality signal",
+    body:"429s get retried, excluded, and re-run — never scored — and the exclusion count is reported next to the results." },
+
+  { type:"div", chip:"Section 3 of 4", head:"Platform + deployment" },
+  { chip:"Platform", head:"App Platform buffers Server-Sent Events at the ingress",
+    body:"No user-facing knob; <b>X-Accel-Buffering</b> is not honored. Our streaming demo felt dead behind it; the same code on a Droplet behind Caddy with <b>flush_interval -1</b> delivered the first event in <b>0.23s</b>. For latency-critical streaming, front it yourself.",
+    stat:"0.23s", cap:"first stream event, Droplet vs buffered ingress" },
+  { chip:"Platform", head:"Quote your image tags in app specs",
+    body:"A git-sha tag like <b>971864e-20260729</b> is digits + e + digits — YAML parses it as scientific notation and the deploy dies with “cannot unmarshal number.” A one-in-thousands sha lottery we won." },
+  { chip:"Platform", head:"App specs are whole-document, and deploys race",
+    body:"GET → modify → PUT; any env change redeploys; a new deploy <b>cancels one in flight</b>. Serialize your CI." },
+  { chip:"Platform", head:"Distribution image slugs rotate",
+    body:"<b>debian-12-x64</b> no longer exists (Debian 13 only now). Query <b>/v2/images</b> instead of pasting a slug from a tutorial." },
+  { chip:"Platform", head:"#cloud-config user_data can silently no-op",
+    body:"Depending on image, a <b>#!/bin/bash</b> script is the reliable form — the failure mode is a droplet that boots fine and just never ran your setup." },
+  { chip:"Platform", head:"Model access keys are scoped, and the list lies",
+    body:"<b>GET /v1/models</b> shows what a key can see, which is broader than what it can invoke — a scoped key 403s on listed models. Probe with a 1-token completion." },
+  { chip:"Platform", head:"Model pricing is machine-readable — stop hardcoding",
+    body:"<b>GET /v2/gen-ai/models</b> → pricing, per model. Our hand-entered placeholder was wrong; the API's wasn't." },
+  { chip:"Platform", head:"Models can degenerate under launch-day load",
+    body:"At peak pressure, up to <b>90%</b> of one model's responses came back as thousands of repeated <b>!</b> characters — same questions clean the day before, sibling models fine. A repeated-char detector turns these into excluded-and-rerun platform failures instead of zeros that crater the score.",
+    stat:"~90%", cap:"peak degenerate-output rate on launch day" },
+  { chip:"Platform", head:"Firewall source-IP pins rot",
+    body:"Pinning SSH to an egress IP breaks the day the ISP rotates it. Fine to do — just write down where every pin lives." },
+
+  { type:"div", chip:"Section 4 of 4", head:"The long tail" },
+  { chip:"Long tail", head:"A strict CSP means no inline script or style at all",
+    body:"<b>script-src 'self'</b> forbids inline &lt;script&gt; and &lt;style&gt; — plan for external static assets from the start rather than retrofitting." },
+  { chip:"Long tail", head:"GitHub org SAML SSO fails cryptically",
+    body:"With SSO enforced, a collaborator grant isn't enough — the SSH key must be SSO-<b>authorized</b> for the org, and until it is, pushes fail with a generic “check your access rights” that looks like a missing grant." },
+  { chip:"Long tail", head:"raw.githubusercontent.com caches for ~5 minutes",
+    body:"Verify a fresh push through the API contents endpoint, not the raw CDN, or you'll “confirm” a stale file." },
+  { chip:"Long tail", head:"A knowledge base is welded to its embedder",
+    body:"Our corpus was embedded with a model that only runs on one box, so nothing else could query it live. For a fixed question set, <b>precomputing retrieval</b> is the clean escape — and it makes runs byte-reproducible." },
+  { chip:"Long tail", head:"Self-hosted software ships the SaaS defaults you fled",
+    body:"Our self-hosted health-check service had the same <b>20-check</b> account cap as the hosted version — and its API returns a bare 403 at the limit, indistinguishable from an auth failure." },
+  { chip:"Long tail", head:"Anything with a renewal period eventually won't get renewed",
+    body:"A 30-day credential died quietly because renewal was a human habit, not a timer; its backup had 3 days left. Automate renewal <b>and</b> alert on renewal failure — a dead-man's switch, not just an expiry check." },
+
+  { type:"title", head:"Same model, wherever it's served.",
+    body:"The harness doesn't care who serves which model — which is exactly why the comparison holds. Try DigitalOcean, and talk to Poseidon: koine.network/@poseidon." },
+];
+
+let slideIx = 0;
+function renderSlide() {
+  const sl = SLIDES[slideIx], el = document.getElementById("slide");
+  el.className = "slide" + (sl.type === "div" || sl.type === "title" ? " divider" : "");
+  let html = "";
+  if (sl.chip) html += `<div class="txt"><span class="chip">${sl.chip}</span>` +
+    `<h2 class="head">${sl.head}</h2>` + (sl.body ? `<div class="body">${sl.body}</div>` : "") + `</div>`;
+  else html = `<div class="txt"><h2 class="head">${sl.head}</h2>` + (sl.body ? `<div class="body">${sl.body}</div>` : "") + `</div>`;
+  if (sl.stat) html += `<div class="stat"><div class="n">${sl.stat}</div><div class="cap">${sl.cap||""}</div></div>`;
+  el.innerHTML = html;
+  document.getElementById("dk-bar").style.width = ((slideIx+1)/SLIDES.length*100) + "%";
+  document.getElementById("dk-count").textContent = `${slideIx+1} / ${SLIDES.length}`;
+}
+function slideStep(d) { slideIx = Math.max(0, Math.min(SLIDES.length-1, slideIx+d)); renderSlide(); }
+document.getElementById("dk-prev").onclick = (e) => { e.stopPropagation(); slideStep(-1); };
+document.getElementById("dk-next").onclick = (e) => { e.stopPropagation(); slideStep(1); };
+document.getElementById("slide").onclick = () => slideStep(1);
+document.addEventListener("keydown", (e) => {
+  if (curTab !== "shoals") return;
+  if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); slideStep(1); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); slideStep(-1); }
+  else if (e.key === "Home") slideStep(-999);
+  else if (e.key === "End") slideStep(999);
+});
+
 document.getElementById("seg-corr").onclick = () => { stripMetric = "corr";
   document.getElementById("seg-corr").classList.add("on"); document.getElementById("seg-faith").classList.remove("on"); drawStrip(); };
 document.getElementById("seg-faith").onclick = () => { stripMetric = "faith";
