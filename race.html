@@ -112,8 +112,10 @@
 <div id="results">
   <div class="rgrid" id="rcards"></div>
   <div class="panel">
-    <h3>Quality vs. cost — the full regatta on one chart</h3>
-    <div class="note">x = cost per answer (log scale) · y = judged correctness · all 57 races, identical prompts, third-family judge</div>
+    <h3>Quality vs. cost — the full regatta on one chart
+      <span class="seg"><button id="sc-corr" class="on">correctness</button><button id="sc-faith">faithfulness</button></span>
+    </h3>
+    <div class="note" id="scatter-note">x = cost per answer (log scale) · y = judged correctness · all 57 races, identical prompts, third-family judge</div>
     <svg id="scatter" width="100%" height="330" viewBox="0 0 900 330" preserveAspectRatio="xMidYMid meet"></svg>
   </div>
   <div class="chartrow">
@@ -297,12 +299,16 @@ function drawCards() {
       </div>`);
   }
 }
+let scatterMetric = "corr";
 function drawScatter() {
   const svg = document.getElementById("scatter"); svg.innerHTML = "";
   const W = 900, H = 330, L = 60, Rt = 30, T = 18, B = 44;
   const costs = ARMS.map(a => R.models[a.id].agg.cost_mean);
   const xmin = Math.log10(Math.min(...costs) / 1.8), xmax = Math.log10(Math.max(...costs) * 1.8);
-  const ymin = 80, ymax = 94;
+  const vals = ARMS.map(a => R.models[a.id].agg[scatterMetric]);
+  /* dynamic y-range: faithfulness clusters ~71-73, correctness ~86-89 — each metric gets
+     its own scale or the tighter one flattens into an unreadable line */
+  const ymin = Math.floor(Math.min(...vals) / 2) * 2 - 2, ymax = Math.ceil(Math.max(...vals) / 2) * 2 + 2;
   const X = v => L + (Math.log10(v) - xmin) / (xmax - xmin) * (W - L - Rt);
   const Y = v => T + (ymax - v) / (ymax - ymin) * (H - T - B);
   for (let y = ymin; y <= ymax; y += 2) {
@@ -315,10 +321,10 @@ function drawScatter() {
     S("text", { x:X(v), y:H-B+16, "text-anchor":"middle", class:"ticktext" }, svg).textContent = "$" + v;
   }
   S("text", { x:(L+W-Rt)/2, y:H-6, "text-anchor":"middle", class:"ticktext" }, svg).textContent = "cost per answer (log)";
-  S("text", { x:14, y:(T+H-B)/2, class:"ticktext", transform:`rotate(-90 14 ${(T+H-B)/2})` }, svg).textContent = "correctness";
+  S("text", { x:14, y:(T+H-B)/2, class:"ticktext", transform:`rotate(-90 14 ${(T+H-B)/2})` }, svg).textContent = scatterMetric === "corr" ? "correctness" : "faithfulness";
   for (const a of ARMS) {
     const m = R.models[a.id];
-    const cx = X(m.agg.cost_mean), cy = Y(m.agg.corr);
+    const cx = X(m.agg.cost_mean), cy = Y(m.agg[scatterMetric]);
     const dot = S("circle", { cx, cy, r:11, fill:COLOR[a.id], stroke:"#0b1220", "stroke-width":2 }, svg);
     S("text", { x:cx, y:cy-18, "text-anchor":"middle", class:"dotlabel" }, svg).textContent = m.label;
     dot.addEventListener("mousemove", ev => tipShow(
@@ -433,6 +439,14 @@ function drawScale() {
     S("text", { x:L + 14 + gi*gw + 69, y:H-10, "text-anchor":"middle", class:"ticktext" }, svg).textContent = labels[gi];
   });
 }
+document.getElementById("sc-corr").onclick = () => { scatterMetric = "corr";
+  document.getElementById("sc-corr").classList.add("on"); document.getElementById("sc-faith").classList.remove("on");
+  document.getElementById("scatter-note").textContent = "x = cost per answer (log scale) · y = judged correctness · all 57 races, identical prompts, third-family judge";
+  if (R) drawScatter(); };
+document.getElementById("sc-faith").onclick = () => { scatterMetric = "faith";
+  document.getElementById("sc-faith").classList.add("on"); document.getElementById("sc-corr").classList.remove("on");
+  document.getElementById("scatter-note").textContent = "x = cost per answer (log scale) · y = judged faithfulness · all 57 races, identical prompts, third-family judge";
+  if (R) drawScatter(); };
 document.getElementById("seg-corr").onclick = () => { stripMetric = "corr";
   document.getElementById("seg-corr").classList.add("on"); document.getElementById("seg-faith").classList.remove("on"); drawStrip(); };
 document.getElementById("seg-faith").onclick = () => { stripMetric = "faith";
