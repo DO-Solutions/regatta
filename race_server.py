@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Webinar demo server — three Poseidons race the same question (2026-07-29 K3 webinar).
+"""Poseidon's Regatta demo server: three models race the same question.
 
-Serves race.html and streams three model arms side-by-side over SSE, each assembled
-EXACTLY like the eval's control arm: retrieve top-5 from Poseidon's Weaviate KB (via
-rag-api), inject as context, ask the model. Retrieval runs ONCE per question and is
-shared by all arms — "same knowledge, three brains".
+Serves race.html and streams three model arms side by side over SSE. Each arm is
+assembled the same way: retrieve the top 5 chunks, inject them as context, ask the model.
+Retrieval runs once per question and every arm sees identical context.
 
   GET  /            → race.html
   GET  /questions   → the eval dataset as JSON [{qid, query, expected_response}]

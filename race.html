@@ -103,6 +103,15 @@
   .slide.divider { justify-content:center; text-align:center; }
   .slide.divider h2.head { font-size:44px; }
   .slide.divider .body { margin:0 auto; }
+  .slide.finale { flex-direction:column; justify-content:center; gap:22px; text-align:center; }
+  .slide.finale h2.head { font-size:40px; margin-bottom:2px; }
+  .slide.finale .body { font-size:18px; margin:0 auto; }
+  .qrrow { display:flex; gap:56px; justify-content:center; align-items:flex-start; margin-top:4px; }
+  .qrbox { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .qrbox svg { width:132px; height:132px; background:transparent; }
+  .qrbox .qlabel { font-size:15px; font-weight:600; color:var(--ink); }
+  .qrbox .qurl { font-size:12px; color:var(--dim); font-family:ui-monospace,monospace; }
+  .qrbox.wide svg { width:118px; height:118px; }
   .decknav { display:flex; align-items:center; gap:14px; border-top:1px solid var(--edge);
     padding:10px 18px; color:var(--dim); font-size:13px; }
   .decknav button { background:var(--panel); color:var(--ink); border:1px solid var(--edge);
@@ -114,7 +123,7 @@
 <body>
 <header>
   <h1>Poseidon's Regatta</h1>
-  <span class="sub">same question · same knowledge · three models — one race</span>
+  <span class="sub">same question, same knowledge, three models</span>
 </header>
 <div class="tabs">
   <button id="tab-race" class="on">Live race</button>
@@ -136,21 +145,21 @@
 <div id="results">
   <div class="rgrid" id="rcards"></div>
   <div class="panel">
-    <h3>Quality vs. cost — the full regatta on one chart
+    <h3>Quality against cost, the full regatta on one chart
       <span class="seg"><button id="sc-corr" class="on">correctness</button><button id="sc-faith">faithfulness</button></span>
     </h3>
-    <div class="note" id="scatter-note">x = cost per answer (log scale) · y = judged correctness · all 57 races, identical prompts, third-family judge</div>
+    <div class="note" id="scatter-note">Cost per answer (log scale) against judged correctness. All 57 races, identical prompts, third-family judge.</div>
     <svg id="scatter" width="100%" height="330" viewBox="0 0 900 330" preserveAspectRatio="xMidYMid meet"></svg>
   </div>
   <div class="chartrow">
     <div class="panel">
       <h3>Scores</h3>
-      <div class="note">correctness (solid) and faithfulness (soft) per model</div>
+      <div class="note">Correctness (solid) and faithfulness (soft), per model.</div>
       <svg id="bars" width="100%" height="260" viewBox="0 0 440 260" preserveAspectRatio="xMidYMid meet"></svg>
     </div>
     <div class="panel">
       <h3>Latency</h3>
-      <div class="note">mean (dot) to p95 (bar end), seconds per answer</div>
+      <div class="note">Mean (dot) to p95 (bar end), in seconds per answer.</div>
       <svg id="lat" width="100%" height="260" viewBox="0 0 440 260" preserveAspectRatio="xMidYMid meet"></svg>
     </div>
   </div>
@@ -158,13 +167,13 @@
     <h3>Every race, every boat
       <span class="seg"><button id="seg-corr" class="on">correctness</button><button id="seg-faith">faithfulness</button></span>
     </h3>
-    <div class="note">one column per race — hover for the question, click to pin the breakdown</div>
+    <div class="note">One column per race. Hover for the question, click to pin the breakdown.</div>
     <svg id="strip" width="100%" height="150" viewBox="0 0 900 150" preserveAspectRatio="xMidYMid meet"></svg>
     <div id="qdetail"></div>
   </div>
   <div class="panel">
     <h3>Cost at scale</h3>
-    <div class="note">measured mean $/answer × monthly question volume</div>
+    <div class="note">Measured mean cost per answer, multiplied by monthly question volume.</div>
     <svg id="scale" width="100%" height="200" viewBox="0 0 900 200" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="method" id="method"></div>
   </div>
@@ -177,7 +186,7 @@
       <button id="dk-prev">←</button><button id="dk-next">→</button>
       <div class="bar"><i id="dk-bar"></i></div>
       <span id="dk-count"></span>
-      <span>arrow keys or click to advance</span>
+      <span>Arrow keys or click to advance</span>
     </div>
   </div>
 </div>
@@ -317,7 +326,7 @@ async function loadResults() {
   const resp = await fetch("/results");
   if (!resp.ok) {
     document.getElementById("rcards").innerHTML =
-      '<div class="rcard" style="grid-column:1/-1">No suite results published yet — run suite_runner.py and place suite_results_merged.json next to the server.</div>';
+      '<div class="rcard" style="grid-column:1/-1">No suite results published yet. Run suite_runner.py and put suite_results_merged.json next to the server.</div>';
     resultsLoaded = true; return;
   }
   R = await resp.json();
@@ -482,59 +491,69 @@ function drawScale() {
 }
 document.getElementById("sc-corr").onclick = () => { scatterMetric = "corr";
   document.getElementById("sc-corr").classList.add("on"); document.getElementById("sc-faith").classList.remove("on");
-  document.getElementById("scatter-note").textContent = "x = cost per answer (log scale) · y = judged correctness · all 57 races, identical prompts, third-family judge";
+  document.getElementById("scatter-note").textContent = "Cost per answer (log scale) against judged correctness. All 57 races, identical prompts, third-family judge.";
   if (R) drawScatter(); };
 document.getElementById("sc-faith").onclick = () => { scatterMetric = "faith";
   document.getElementById("sc-faith").classList.add("on"); document.getElementById("sc-corr").classList.remove("on");
-  document.getElementById("scatter-note").textContent = "x = cost per answer (log scale) · y = judged faithfulness · all 57 races, identical prompts, third-family judge";
+  document.getElementById("scatter-note").textContent = "Cost per answer (log scale) against judged faithfulness. All 57 races, identical prompts, third-family judge.";
   if (R) drawScatter(); };
 
 /* ---------------- The Shoals (sharp-edges deck) ---------------- */
 const SLIDES = [
   { type:"title", head:"The Shoals",
-    body:"Sharp edges we hit building Poseidon's Regatta — every number measured, not estimated. Arrow keys or click to sail through." },
+    body:"Sharp edges we hit building Poseidon's Regatta. Every number here was measured. Arrow keys or click to advance." },
 
   { type:"div", chip:"Section 1 of 3", head:"Reasoning models change the rules" },
   { chip:"Reasoning models", head:"A tight token budget silently kneecaps reasoning models",
-    body:"Reasoning tokens bill from the same <b>max_tokens</b> budget as the answer. At a 1,024 cap, 24 of 57 K3 answers hit the ceiling <b>mid-thought</b> and scored <b>33</b> — the same questions scored 92 uncapped. The non-reasoning arm never noticed. Tell: completion counts exactly equal to your cap.",
+    body:"Reasoning tokens bill from the same <b>max_tokens</b> budget as the answer. At a 1,024 cap, 24 of 57 K3 answers hit the ceiling <b>mid-thought</b> and scored <b>33</b>. The same questions scored 92 uncapped, and the non-reasoning arm never noticed. The tell is a completion count exactly equal to your cap.",
     stat:"33→92", cap:"capped vs uncapped correctness" },
   { chip:"Reasoning models", head:"An “empty” reply with finish_reason: length isn't a failure",
-    body:"The whole budget went to thinking before any visible token. Raise <b>max_tokens</b> (4,096 is a sane floor); retrying harder does nothing.",
+    body:"The whole budget went to thinking before any visible token appeared. Raise <b>max_tokens</b> to 4,096 or higher. Retrying does nothing.",
     stat:"4096", cap:"sane completion floor for a reasoning model" },
   { chip:"Reasoning models", head:"Thinking streams in a different field",
-    body:"It arrives in <b>delta.reasoning_content</b>, not <b>delta.content</b>. Read only content and the model looks silent — that's how we discovered K2.6 is a reasoning model too, often thinking <b>longer</b> than K3." },
+    body:"It arrives in <b>delta.reasoning_content</b>, not <b>delta.content</b>. Read only content and the model looks silent. That is how we found out K2.6 reasons too, often thinking <b>longer</b> than K3." },
 
   { type:"div", chip:"Section 2 of 3", head:"LLM-as-judge is its own minefield" },
   { chip:"LLM-as-judge", head:"Small judge budgets fail invisibly",
-    body:"A 300–700-token judge truncates mid-verdict on long answers → unparseable JSON → “judge failed” that <b>clusters on the longest answers</b>, quietly biasing your sample. Give judges 2,000 tokens and fence-stripping extraction with retries." },
+    body:"A 300–700-token judge truncates mid-verdict on long answers. The unparseable JSON becomes a “judge failed” that <b>clusters on your longest answers</b>, quietly biasing the sample. Give judges 2,000 tokens, fence-stripping extraction, and retries." },
   { chip:"LLM-as-judge", head:"Never let a model grade its own vendor's output",
-    body:"We judge with an open-source <b>third-family</b> model (DeepSeek V4 Pro) so no candidate self-grades — one less bias to defend in Q&A." },
+    body:"We judge with an open-source <b>third-family</b> model, DeepSeek V4 Pro, so no candidate grades itself. That is one less bias to defend in Q&A." },
   { chip:"LLM-as-judge", head:"Measure the judge's noise floor before reading deltas",
-    body:"Re-judging <b>identical text</b> moved scores with a standard deviation of ~10 points per question. Any single-question comparison inside that band is noise.",
+    body:"Re-judging <b>identical text</b> moved scores with a standard deviation of about 10 points per question. Any single-question comparison inside that band is noise.",
     stat:"±10", cap:"per-question judge noise (identical text)" },
   { chip:"LLM-as-judge", head:"“Indexing succeeded” says nothing about retrieval quality",
-    body:"After any corpus change, run known queries and inspect what comes back. We found a corpus where <b>~24%</b> of retrieved chunks were boilerplate — invisible until we looked." },
+    body:"After any corpus change, run known queries and read what comes back. We found a corpus where <b>24%</b> of retrieved chunks were boilerplate, and nothing in the indexing logs said so." },
 
   { type:"div", chip:"Section 3 of 3", head:"Platform + deployment" },
   { chip:"Platform", head:"Ingress proxies can buffer Server-Sent Events",
-    body:"Correct SSE headers aren't always enough, and <b>X-Accel-Buffering</b> may not be honored. Our streaming demo felt dead behind a buffering ingress; the same code behind a proxy with <b>flush_interval -1</b> delivered the first event in <b>0.23s</b>. For latency-critical streaming, control the proxy.",
+    body:"Correct SSE headers are not always enough, and <b>X-Accel-Buffering</b> may be ignored. Our streaming demo felt dead behind a buffering ingress. The same code behind a proxy with <b>flush_interval -1</b> delivered the first event in <b>0.23s</b>. If streaming latency matters, control the proxy.",
     stat:"0.23s", cap:"first stream event with a flushing proxy" },
-  { chip:"Platform", head:"Model pricing is machine-readable — stop hardcoding",
-    body:"<b>GET /v2/gen-ai/models</b> → pricing, per model. Our hand-entered placeholder was wrong; the API's wasn't." },
+  { chip:"Platform", head:"Model pricing is machine-readable, so stop hardcoding it",
+    body:"<b>GET /v2/gen-ai/models</b> returns pricing per model. Our hand-entered placeholder price was wrong. The API's was right." },
 
-  { type:"title", head:"The point is cost-effectiveness.",
-    body:"Across 57 graded questions, Kimi K3 held quality parity with a frontier model at roughly <b>half the cost</b> — and Kimi K2.6 came within three points at a <b>ninth</b>. Run the numbers on your own workload: github.com/DO-Solutions/regatta · and say hi to Poseidon: koine.network/@poseidon." },
+  { type:"finale", head:"The point is cost-effectiveness.",
+    body:"Across 57 graded questions, Kimi K3 matched a frontier model's quality at half the cost. Kimi K2.6 came within three points at a ninth. Run the numbers on your own workload.",
+    qrs:[["poseidon","Talk to Poseidon","koine.network/@poseidon"],
+         ["regatta","Take the harness","github.com/DO-Solutions/regatta"]],
+    qrs2:[["docloud","Start building","cloud.digitalocean.com"]] },
 ]
 
+const QR = {"poseidon": "<svg width=\"33\" height=\"33\" class=\"segno\"><path class=\"qrline\" stroke=\"#e8eefc\" d=\"M2 2.5h7m2 0h5m2 0h5m1 0h7m-29 1h1m5 0h1m1 0h5m4 0h1m4 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h5m1 0h3m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h1m4 0h1m2 0h1m4 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h2m1 0h1m2 0h2m2 0h1m2 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m6 0h2m1 0h1m2 0h2m1 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-20 1h1m1 0h1m2 0h1m2 0h3m-19 1h3m1 0h2m9 0h3m7 0h2m-27 1h1m1 0h1m1 0h1m1 0h1m2 0h1m5 0h6m1 0h3m2 0h1m-27 1h5m1 0h1m1 0h3m1 0h1m1 0h1m1 0h1m3 0h1m1 0h2m1 0h1m-28 1h2m3 0h1m1 0h6m10 0h2m3 0h1m-29 1h4m1 0h2m5 0h2m1 0h3m3 0h1m1 0h1m2 0h3m-29 1h1m1 0h1m4 0h1m1 0h1m3 0h2m2 0h1m1 0h1m2 0h2m1 0h4m-29 1h4m1 0h2m1 0h1m1 0h5m1 0h1m1 0h3m1 0h4m1 0h2m-29 1h1m2 0h3m2 0h1m5 0h2m2 0h2m1 0h1m2 0h2m1 0h1m-27 1h2m1 0h10m1 0h1m2 0h2m1 0h1m1 0h3m1 0h1m-19 1h2m5 0h1m3 0h2m4 0h1m-27 1h1m4 0h2m2 0h1m1 0h1m1 0h3m4 0h1m1 0h2m1 0h2m-25 1h3m4 0h1m1 0h2m4 0h3m1 0h8m-28 1h1m2 0h1m1 0h1m1 0h4m4 0h2m2 0h5m1 0h2m-20 1h2m1 0h1m2 0h1m1 0h3m1 0h1m3 0h2m2 0h1m-29 1h7m2 0h1m1 0h2m5 0h3m1 0h1m1 0h1m1 0h2m-28 1h1m5 0h1m1 0h3m1 0h2m1 0h1m2 0h1m1 0h1m3 0h1m2 0h2m-29 1h1m1 0h3m1 0h1m10 0h1m2 0h7m-27 1h1m1 0h3m1 0h1m1 0h5m6 0h1m4 0h1m1 0h2m-28 1h1m1 0h3m1 0h1m1 0h4m1 0h2m1 0h3m1 0h1m2 0h1m1 0h2m1 0h1m-29 1h1m5 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h2m2 0h2m1 0h1m-28 1h7m2 0h2m1 0h1m1 0h2m2 0h3m2 0h1m3 0h1\"/></svg>", "regatta": "<svg width=\"33\" height=\"33\" class=\"segno\"><path class=\"qrline\" stroke=\"#e8eefc\" d=\"M2 2.5h7m3 0h2m3 0h1m6 0h7m-29 1h1m5 0h1m2 0h3m2 0h2m4 0h1m1 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m2 0h1m2 0h1m3 0h2m2 0h1m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h1m1 0h2m1 0h2m2 0h1m3 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h3m1 0h1m1 0h4m1 0h1m1 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m1 0h2m2 0h2m1 0h5m2 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-20 1h3m5 0h4m-21 1h1m2 0h1m1 0h2m1 0h1m4 0h2m1 0h1m2 0h1m1 0h1m1 0h1m-24 1h1m1 0h3m5 0h4m2 0h1m2 0h2m1 0h1m2 0h1m2 0h1m-29 1h2m2 0h1m1 0h1m3 0h1m1 0h3m1 0h1m2 0h3m2 0h4m-26 1h1m2 0h1m1 0h2m1 0h4m1 0h2m2 0h1m4 0h1m1 0h2m-28 1h2m3 0h2m1 0h1m1 0h1m3 0h1m1 0h2m2 0h3m2 0h1m1 0h2m-29 1h4m1 0h1m2 0h2m7 0h2m1 0h2m-22 1h1m1 0h1m1 0h4m3 0h1m4 0h2m2 0h1m1 0h7m-28 1h2m2 0h1m5 0h3m3 0h2m1 0h3m2 0h1m1 0h1m-28 1h1m1 0h1m1 0h1m1 0h3m2 0h1m1 0h2m1 0h2m2 0h1m2 0h1m3 0h1m-27 1h1m2 0h2m2 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h4m1 0h1m2 0h1m-29 1h1m2 0h1m2 0h1m1 0h1m1 0h1m1 0h2m7 0h1m1 0h2m2 0h2m-27 1h1m1 0h2m2 0h1m1 0h4m3 0h1m2 0h2m1 0h2m2 0h2m-29 1h1m3 0h5m1 0h2m2 0h3m2 0h6m1 0h1m-19 1h4m1 0h1m5 0h2m3 0h1m1 0h3m-29 1h7m5 0h3m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m2 0h1m-28 1h1m5 0h1m1 0h1m3 0h2m4 0h1m1 0h1m3 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m3 0h2m2 0h1m2 0h1m2 0h5m2 0h2m-29 1h1m1 0h3m1 0h1m1 0h2m1 0h4m4 0h2m1 0h6m-28 1h1m1 0h3m1 0h1m2 0h2m1 0h1m3 0h1m2 0h2m3 0h3m1 0h1m-29 1h1m5 0h1m2 0h2m2 0h1m2 0h6m2 0h1m2 0h1m-28 1h7m1 0h1m1 0h3m2 0h1m1 0h1m2 0h6m1 0h1\"/></svg>", "docloud": "<svg width=\"33\" height=\"33\" class=\"segno\"><path class=\"qrline\" stroke=\"#e8eefc\" d=\"M2 2.5h7m1 0h2m1 0h1m1 0h8m1 0h7m-29 1h1m5 0h1m2 0h1m3 0h1m2 0h2m4 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m2 0h4m1 0h1m1 0h1m2 0h2m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m3 0h4m1 0h1m1 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h1m2 0h2m6 0h2m1 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h3m3 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-20 1h3m1 0h1m2 0h1m3 0h1m-20 1h7m6 0h2m1 0h1m1 0h1m3 0h2m3 0h1m-28 1h5m1 0h1m1 0h1m2 0h2m4 0h2m1 0h4m1 0h1m1 0h1m-27 1h1m3 0h4m2 0h1m1 0h2m5 0h3m1 0h1m-26 1h4m4 0h1m1 0h1m3 0h1m1 0h1m2 0h5m1 0h1m1 0h1m-28 1h1m1 0h2m1 0h2m1 0h3m4 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h4m-29 1h1m1 0h2m1 0h1m2 0h3m3 0h1m2 0h6m1 0h2m1 0h2m-29 1h1m2 0h1m1 0h2m1 0h2m1 0h2m1 0h1m1 0h2m2 0h2m1 0h1m-24 1h2m3 0h1m1 0h1m3 0h3m5 0h1m2 0h1m1 0h2m2 0h1m-29 1h1m1 0h3m1 0h2m2 0h1m1 0h2m3 0h1m7 0h2m-27 1h3m1 0h1m2 0h2m1 0h1m2 0h1m1 0h2m1 0h8m1 0h2m-29 1h1m1 0h1m3 0h1m1 0h5m7 0h1m1 0h1m1 0h1m-25 1h1m4 0h1m5 0h1m4 0h1m1 0h1m3 0h2m1 0h1m1 0h2m-29 1h1m3 0h3m4 0h2m4 0h2m1 0h5m1 0h1m1 0h1m-21 1h1m1 0h2m4 0h3m1 0h1m3 0h2m1 0h2m-29 1h7m1 0h2m2 0h1m2 0h1m3 0h2m1 0h1m1 0h1m-25 1h1m5 0h1m1 0h4m1 0h4m2 0h2m3 0h2m-26 1h1m1 0h3m1 0h1m1 0h1m4 0h1m1 0h1m2 0h1m1 0h9m-29 1h1m1 0h3m1 0h1m1 0h3m3 0h2m1 0h5m1 0h1m-24 1h1m1 0h3m1 0h1m1 0h3m1 0h1m1 0h2m1 0h1m1 0h7m1 0h1m-28 1h1m5 0h1m1 0h2m2 0h4m2 0h1m1 0h1m3 0h2m1 0h1m-28 1h7m2 0h1m2 0h4m1 0h1m1 0h1m4 0h1m1 0h1\"/></svg>"};
 let slideIx = 0;
 function renderSlide() {
   const sl = SLIDES[slideIx], el = document.getElementById("slide");
-  el.className = "slide" + (sl.type === "div" || sl.type === "title" ? " divider" : "");
+  el.className = "slide" + (sl.type === "div" || sl.type === "title" ? " divider"
+    : sl.type === "finale" ? " finale" : "");
   let html = "";
   if (sl.chip) html += `<div class="txt"><span class="chip">${sl.chip}</span>` +
     `<h2 class="head">${sl.head}</h2>` + (sl.body ? `<div class="body">${sl.body}</div>` : "") + `</div>`;
   else html = `<div class="txt"><h2 class="head">${sl.head}</h2>` + (sl.body ? `<div class="body">${sl.body}</div>` : "") + `</div>`;
   if (sl.stat) html += `<div class="stat"><div class="n">${sl.stat}</div><div class="cap">${sl.cap||""}</div></div>`;
+  const qrow = (list, cls) => `<div class="qrrow">` + list.map(([k, label, url]) =>
+    `<div class="qrbox ${cls||""}">${QR[k]}<div class="qlabel">${label}</div><div class="qurl">${url}</div></div>`
+  ).join("") + `</div>`;
+  if (sl.qrs) html += qrow(sl.qrs);
+  if (sl.qrs2) html += qrow(sl.qrs2, "wide");
   el.innerHTML = html;
   document.getElementById("dk-bar").style.width = ((slideIx+1)/SLIDES.length*100) + "%";
   document.getElementById("dk-count").textContent = `${slideIx+1} / ${SLIDES.length}`;

@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""Webinar suite run — K2.6 vs K3 vs Opus 5 across the full eval set.
+"""Batch suite run: K2.6, K3, and Opus 5 across the full eval set.
 
-Webinar ground rule: 429s are NOT a model quality signal, so any question
-that fails on platform pressure (429/5xx after in-call retries) is retried in later
-sweeps until it completes cleanly; only clean completions enter the statistics, and
-the excluded/retried count is reported honestly next to the results.
+Rate limits are not a model quality signal. Any question that fails on platform pressure
+(429 or 5xx after in-call retries) is retried in later sweeps until it completes cleanly.
+Only clean completions enter the statistics, and the excluded count is reported next to
+the results. Degenerate output (mostly one repeated character) is treated the same way.
 
-Every arm gets the IDENTICAL prompt: shared top-5 retrieval from Poseidon's Weaviate
-KB + the byte-identical system message (SYSMSG — no per-model persona differences).
-Judge = an open-source THIRD-family model (deepseek-v4-pro on DO by default): neither
-Kimi nor Claude is graded by its own vendor's model.
+Every arm gets the identical prompt: shared top-5 retrieval plus the byte-identical
+system message (SYSMSG), so no per-model persona differences leak into the scores. The
+judge is an open-source third-family model, so no candidate grades itself.
 
 Usage:  bash run.sh suite            (sets env from Vault, tunnel must be up)
    or:  python3 suite_runner.py --arms k3,opus --out suite_results.json
