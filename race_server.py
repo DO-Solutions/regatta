@@ -126,7 +126,7 @@ def stream_do(w, arm, q, chunks):
     ctx = "\n\n---\n\n".join(chunks)[:12000]
     # 2048: reasoning tokens share the completion budget — at 1024 both Kimi arms hit the
     # cap exactly (K2.6 spent ~3.5k chars thinking), truncating answers mid-sentence on camera
-    body = {"model": m["do_id"], "max_tokens": 2048, "stream": True,
+    body = {"model": m["do_id"], "max_tokens": 4096, "stream": True,
             "stream_options": {"include_usage": True},
             "messages": [{"role": "system", "content": SYSMSG + "\n\nCONTEXT:\n" + ctx},
                          {"role": "user", "content": q}]}

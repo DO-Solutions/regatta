@@ -62,7 +62,7 @@ def ask(arm, q):
     ctx = "\n\n---\n\n".join(retrieve(q))[:12000]
     t0 = time.time()
     if arm == "opus" and OPUS_BACKEND == "anthropic":
-        st, d = _post(ANTH, {"model": m["anthropic_id"], "max_tokens": 1500,
+        st, d = _post(ANTH, {"model": m["anthropic_id"], "max_tokens": 4096,
                              "system": SYSMSG + "\n\nCONTEXT:\n" + ctx,
                              "messages": [{"role": "user", "content": q}]},
                       {"x-api-key": CFG["ANTHROPIC_KEY"],
@@ -74,7 +74,9 @@ def ask(arm, q):
         pt, ct = u.get("input_tokens") or 0, u.get("output_tokens") or 0
         text = "".join(b.get("text", "") for b in d.get("content", []))
     else:
-        body = {"model": m["do_id"], "max_tokens": 1024,
+        # 4096: reasoning tokens share this budget — at 1024, 24/57 K3 answers truncated
+        # and scored 33 vs 92 uncapped (measured 2026-07-29). Generous is correct.
+        body = {"model": m["do_id"], "max_tokens": 4096,
                 "messages": [{"role": "system", "content": SYSMSG + "\n\nCONTEXT:\n" + ctx},
                              {"role": "user", "content": q}]}
         if "top_p" in m:
